@@ -1,103 +1,103 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useEffect, useRef, useState } from "react";
+import Carousel from "@/components/Carousel";
+import NuestrosProductos from "@/components/productos/nuestrosProductos";
+import ValoresGrid from "@/components/ValoresGrid";
+import VideoBanner from "@/components/VideoBanner";
+
+export default function Page() {
+  const carouselRef = useRef<HTMLElement | null>(null);
+  const valoresRef = useRef<HTMLElement | null>(null);
+  const videoRef = useRef<HTMLElement | null>(null);
+  const productosRef = useRef<HTMLElement | null>(null);
+
+  const sectionRefs = [carouselRef, valoresRef, videoRef, productosRef];
+
+  const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
+  const isScrolling = useRef(false);
+
+  useEffect(() => {
+    const handleWheel = (e: WheelEvent) => {
+      if (isScrolling.current) return;
+
+      const direction = e.deltaY > 0 ? 1 : -1;
+      const newIndex = currentSectionIndex + direction;
+
+      if (newIndex >= 0 && newIndex < sectionRefs.length) {
+        isScrolling.current = true;
+        setCurrentSectionIndex(newIndex);
+
+        // Personalizamos el PRIMER scroll (Carousel → ValoresGrid)
+        if (
+          currentSectionIndex === 0 &&
+          direction === 1 &&
+          valoresRef.current
+        ) {
+          // Primer scroll → al inicio de ValoresGrid
+          const offsetTop = valoresRef.current.offsetTop;
+          const scrollTo = offsetTop - window.innerHeight * 0.7;
+
+          window.scrollTo({
+            top: scrollTo,
+            behavior: "smooth",
+          });
+        } else if (
+          currentSectionIndex === 1 &&
+          direction === 1 &&
+          videoRef.current
+        ) {
+          // Segundo scroll → centrar VideoBanner en pantalla
+          const videoElement = videoRef.current;
+          const rect = videoElement.getBoundingClientRect();
+          const scrollY = window.scrollY + rect.top;
+          const scrollTo = scrollY - window.innerHeight / 2 + rect.height / 2;
+
+          window.scrollTo({
+            top: scrollTo,
+            behavior: "smooth",
+          });
+        } else {
+          // Scroll normal entre otras secciones
+          const targetRef = sectionRefs[newIndex].current;
+          if (targetRef) {
+            targetRef.scrollIntoView({
+              behavior: "smooth",
+              block: "start",
+            });
+          }
+        }
+
+        setTimeout(() => {
+          isScrolling.current = false;
+        }, 1000);
+      }
+    };
+
+    window.addEventListener("wheel", handleWheel, { passive: false });
+
+    return () => {
+      window.removeEventListener("wheel", handleWheel);
+    };
+  }, [currentSectionIndex]);
+
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <>
+      <section ref={carouselRef}>
+        <Carousel />
+      </section>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+      <section ref={valoresRef}>
+        <ValoresGrid />
+      </section>
+
+      <section ref={videoRef}>
+        <VideoBanner />
+      </section>
+
+      <section ref={productosRef}>
+        <NuestrosProductos />
+      </section>
+    </>
   );
 }
