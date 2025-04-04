@@ -5,6 +5,9 @@ import Carousel from "@/components/Carousel";
 import NuestrosProductos from "@/components/productos/nuestrosProductos";
 import ValoresGrid from "@/components/ValoresGrid";
 import VideoBanner from "@/components/VideoBanner";
+import ProductoDestacado from "@/components/destacado1/ProductoDestacado";
+import ColorSystem from "@/components/colorsystem";
+import Noticias from "@/components/news/Noticias";
 
 export default function Page() {
   const carouselRef = useRef<HTMLElement | null>(null);
@@ -19,22 +22,27 @@ export default function Page() {
 
   useEffect(() => {
     const handleWheel = (e: WheelEvent) => {
+      const direction = e.deltaY > 0 ? 1 : -1;
+
+      // Scroll hacia arriba → permitir scroll normal
+      if (direction === -1) {
+        return; // No intervenimos, dejamos que el navegador haga su scroll normal
+      }
+
+      // Scroll hacia abajo → comportamiento personalizado
       if (isScrolling.current) return;
 
-      const direction = e.deltaY > 0 ? 1 : -1;
       const newIndex = currentSectionIndex + direction;
 
       if (newIndex >= 0 && newIndex < sectionRefs.length) {
         isScrolling.current = true;
         setCurrentSectionIndex(newIndex);
 
-        // Personalizamos el PRIMER scroll (Carousel → ValoresGrid)
         if (
           currentSectionIndex === 0 &&
           direction === 1 &&
           valoresRef.current
         ) {
-          // Primer scroll → al inicio de ValoresGrid
           const offsetTop = valoresRef.current.offsetTop;
           const scrollTo = offsetTop - window.innerHeight * 0.7;
 
@@ -47,7 +55,6 @@ export default function Page() {
           direction === 1 &&
           videoRef.current
         ) {
-          // Segundo scroll → centrar VideoBanner en pantalla
           const videoElement = videoRef.current;
           const rect = videoElement.getBoundingClientRect();
           const scrollY = window.scrollY + rect.top;
@@ -58,7 +65,6 @@ export default function Page() {
             behavior: "smooth",
           });
         } else {
-          // Scroll normal entre otras secciones
           const targetRef = sectionRefs[newIndex].current;
           if (targetRef) {
             targetRef.scrollIntoView({
@@ -98,6 +104,9 @@ export default function Page() {
       <section ref={productosRef}>
         <NuestrosProductos />
       </section>
+      <ProductoDestacado />
+      <ColorSystem />
+      <Noticias />
     </>
   );
 }

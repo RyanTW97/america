@@ -2,10 +2,15 @@
 
 import { motion } from "framer-motion";
 
-export default function Titulo() {
+interface TituloProps {
+  azul: string;
+  blanco: string;
+}
+
+export default function Titulo({ azul, blanco }: TituloProps) {
   return (
     <div className="text-center mb-10">
-      <h2 className="text-2xl  md:text-4xl lg:text-6xl font-extrabold tracking-widest font-archivo flex items-center justify-center gap-1 sm:gap-2">
+      <h2 className="text-2xl md:text-4xl lg:text-6xl font-extrabold tracking-widest font-archivo flex items-center justify-center gap-1 sm:gap-2">
         <motion.span
           className="text-blue-900"
           initial={{ opacity: 0, y: 20 }}
@@ -13,7 +18,7 @@ export default function Titulo() {
           transition={{ duration: 0.6, ease: "easeOut" }}
           viewport={{ once: true }}
         >
-          NUESTROS
+          {azul}
         </motion.span>
         <motion.span
           className="text-white px-3 py-1 sm:px-4 md:px-5 sm:py-1.5"
@@ -27,7 +32,7 @@ export default function Titulo() {
           transition={{ duration: 0.6, ease: "easeOut", delay: 0.3 }}
           viewport={{ once: true }}
         >
-          PRODUCTOS
+          {blanco}
         </motion.span>
       </h2>
     </div>
