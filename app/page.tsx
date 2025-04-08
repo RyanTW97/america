@@ -14,8 +14,19 @@ export default function Page() {
   const valoresRef = useRef<HTMLElement | null>(null);
   const videoRef = useRef<HTMLElement | null>(null);
   const productosRef = useRef<HTMLElement | null>(null);
+  const destacadoRef = useRef<HTMLElement | null>(null);
+  const colorRef = useRef<HTMLElement | null>(null);
+  const noticiasRef = useRef<HTMLElement | null>(null);
 
-  const sectionRefs = [carouselRef, valoresRef, videoRef, productosRef];
+  const sectionRefs = [
+    carouselRef,
+    valoresRef,
+    videoRef,
+    productosRef,
+    destacadoRef,
+    colorRef,
+    noticiasRef,
+  ];
 
   const [currentSectionIndex, setCurrentSectionIndex] = useState(0);
   const isScrolling = useRef(false);
@@ -24,60 +35,41 @@ export default function Page() {
     const handleWheel = (e: WheelEvent) => {
       const direction = e.deltaY > 0 ? 1 : -1;
 
-      // Scroll hacia arriba → permitir scroll normal
-      if (direction === -1) {
-        return; // No intervenimos, dejamos que el navegador haga su scroll normal
-      }
-
-      // Scroll hacia abajo → comportamiento personalizado
       if (isScrolling.current) return;
 
       const newIndex = currentSectionIndex + direction;
+      if (newIndex < 0 || newIndex >= sectionRefs.length) return;
 
-      if (newIndex >= 0 && newIndex < sectionRefs.length) {
-        isScrolling.current = true;
-        setCurrentSectionIndex(newIndex);
+      isScrolling.current = true;
+      setCurrentSectionIndex(newIndex);
 
-        if (
-          currentSectionIndex === 0 &&
-          direction === 1 &&
-          valoresRef.current
-        ) {
-          const offsetTop = valoresRef.current.offsetTop;
-          const scrollTo = offsetTop - window.innerHeight * 0.7;
+      const targetRef = sectionRefs[newIndex].current;
+      if (!targetRef) return;
 
-          window.scrollTo({
-            top: scrollTo,
-            behavior: "smooth",
-          });
-        } else if (
-          currentSectionIndex === 1 &&
-          direction === 1 &&
-          videoRef.current
-        ) {
-          const videoElement = videoRef.current;
-          const rect = videoElement.getBoundingClientRect();
-          const scrollY = window.scrollY + rect.top;
-          const scrollTo = scrollY - window.innerHeight / 2 + rect.height / 2;
+      const rect = targetRef.getBoundingClientRect();
+      const scrollY = window.scrollY + rect.top;
 
-          window.scrollTo({
-            top: scrollTo,
-            behavior: "smooth",
-          });
-        } else {
-          const targetRef = sectionRefs[newIndex].current;
-          if (targetRef) {
-            targetRef.scrollIntoView({
-              behavior: "smooth",
-              block: "start",
-            });
-          }
-        }
+      let scrollTo = 0;
 
-        setTimeout(() => {
-          isScrolling.current = false;
-        }, 1000);
+      if (newIndex === sectionRefs.length - 1) {
+        // Noticias → justo antes del footer
+        scrollTo = scrollY - window.innerHeight + rect.height;
+      } else if (newIndex === 3) {
+        // NuestrosProductos → un poco más abajo (para mostrar el título)
+        scrollTo = scrollY - window.innerHeight * 0.1;
+      } else {
+        // Todas las demás → centrado vertical
+        scrollTo = scrollY - window.innerHeight / 2 + rect.height / 2;
       }
+
+      window.scrollTo({
+        top: scrollTo,
+        behavior: "smooth",
+      });
+
+      setTimeout(() => {
+        isScrolling.current = false;
+      }, 1000);
     };
 
     window.addEventListener("wheel", handleWheel, { passive: false });
@@ -104,9 +96,18 @@ export default function Page() {
       <section ref={productosRef}>
         <NuestrosProductos />
       </section>
-      <ProductoDestacado />
-      <ColorSystem />
-      <Noticias />
+
+      <section ref={destacadoRef}>
+        <ProductoDestacado />
+      </section>
+
+      <section ref={colorRef}>
+        <ColorSystem />
+      </section>
+
+      <section ref={noticiasRef}>
+        <Noticias />
+      </section>
     </>
   );
 }

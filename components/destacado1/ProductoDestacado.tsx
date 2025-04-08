@@ -21,9 +21,14 @@ export default function ProductoDestacado() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-center">
         {/* Video */}
         <div className="w-full aspect-square rounded-2xl overflow-hidden bg-gray-300 flex items-center justify-center">
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-full">
-            ▶ Play
-          </button>
+          <video
+            src="/imper.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="w-full h-full object-cover"
+          />
         </div>
 
         {/* Imagen del producto */}

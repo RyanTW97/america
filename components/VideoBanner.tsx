@@ -11,13 +11,12 @@ const text2 = "La Calidad";
 
 const VideoBanner = () => {
   const ref = useRef(null);
-  const isInView = useInView(ref, { amount: 0.5, once: true }); // activa al 50% del componente
+  const isInView = useInView(ref, { amount: 0.5, once: true });
 
   const [displayText1, setDisplayText1] = useState("");
   const [displayText2, setDisplayText2] = useState("");
   const [showSecondLine, setShowSecondLine] = useState(false);
 
-  // Máquina de escribir para la primera línea
   useEffect(() => {
     if (!isInView) return;
     let current = 0;
@@ -32,7 +31,6 @@ const VideoBanner = () => {
     return () => clearInterval(interval);
   }, [isInView]);
 
-  // Máquina de escribir para la segunda línea
   useEffect(() => {
     if (!showSecondLine) return;
     let current = 0;
@@ -53,7 +51,6 @@ const VideoBanner = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 items-center h-full">
         {/* Texto */}
         <div className="flex flex-col justify-center h-full text-left space-y-4 place-items-center transform -skew-y-6">
-          {/* Primera línea */}
           {isInView && (
             <motion.h2
               initial={{ opacity: 0, y: -20 }}
@@ -65,7 +62,6 @@ const VideoBanner = () => {
             </motion.h2>
           )}
 
-          {/* Segunda línea */}
           {showSecondLine && (
             <motion.h2
               initial={{ opacity: 0, y: 10 }}
@@ -84,9 +80,16 @@ const VideoBanner = () => {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: showSecondLine ? 1 : 0 }}
           transition={{ duration: 0.5, ease: "easeOut" }}
-          className="w-full h-[250px] md:h-[300px] lg:h-[400px] bg-gray-400 flex items-center justify-center rounded-2xl"
+          className="w-full h-[250px] md:h-[300px] lg:h-[400px] bg-gray-400 flex items-center justify-center rounded-2xl overflow-hidden"
         >
-          <span className="text-white">[ Video Placeholder ]</span>
+          <video
+            src="/videobanner.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="w-full h-full object-cover"
+          />
         </motion.div>
       </div>
     </section>
