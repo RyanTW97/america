@@ -11,7 +11,7 @@ export default function ColorSystem() {
   return (
     <section
       ref={ref}
-      className="relative max-w-7xl mx-auto px-4 md:px-8 mt-12 mb-32"
+      className="relative max-w-7xl mx-auto px-4 md:px-8 mt-mb-16 mb-16 "
     >
       {/* Imagen principal sin animación */}
       <Image

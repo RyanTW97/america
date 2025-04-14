@@ -11,33 +11,13 @@ import Noticias from "@/components/news/Noticias";
 export default function Page() {
   return (
     <>
-      <section>
-        <Carousel />
-      </section>
-
-      <section>
-        <ValoresGrid />
-      </section>
-
-      <section>
-        <VideoBanner />
-      </section>
-
-      <section>
-        <NuestrosProductos />
-      </section>
-
-      <section>
-        <ProductoDestacado />
-      </section>
-
-      <section>
-        <ColorSystem />
-      </section>
-
-      <section>
-        <Noticias />
-      </section>
+      <Carousel />
+      <ValoresGrid />
+      <VideoBanner />
+      <NuestrosProductos />
+      <ProductoDestacado />
+      <ColorSystem />
+      <Noticias />
     </>
   );
 }

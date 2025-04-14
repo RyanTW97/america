@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { Separator } from "./ui/separator";
 
 interface ProductCardProps {
   title: string;
@@ -19,7 +20,7 @@ const ProductCard = ({ title }: ProductCardProps) => {
           className="object-contain max-h-full"
         />
       </div>
-
+      <Separator />
       {/* Título */}
       <h3 className="text-center text-sm font-bold text-blue-900 leading-tight">
         {title}
