@@ -1,38 +1,54 @@
 // app/QuienesSomos/page.tsx
 
-import PageBannerImage from "./components/pageBannerImage"; // Corregido: Asegúrate que el nombre del archivo coincide (PageBannerImage.tsx)
+"use client";
+
+import { motion } from "framer-motion";
+import PageBannerImage from "./components/pageBannerImage";
 import AboutIntro from "./components/AboutIntro";
 import HistorySectionScroll from "./components/HistorySectionScroll";
+import VisionPolitica from "./components/VisionPolitica";
+import ResponsabilidadSocial from "./components/ResponsabilidadSocial";
+import Certificaciones from "./components/Certificaciones";
 
-// Solo UNA definición de la función del componente de página
 export default function QuienesSomosPage() {
-  // Definimos la constante DENTRO de la función
-  const introText =
-    "En Pinturas América S.A. contamos con más de 25 años de experiencia en la elaboración y comercialización de recubrimientos orgánicos e inorgánicos como pinturas, resinas, tintas y disolventes. Atendemos los sectores industrial, naval, petrolero, automotriz, arquitectónico, entre otros, brindando asesoría técnica especializada y productos de alta calidad. Nuestra planta matriz, ubicada en un parque industrial moderno y ecológico, cuenta con el laboratorio más completo del país, reflejando nuestro compromiso con la innovación, la sostenibilidad y el crecimiento constante.";
-
-  // El return con el JSX
   return (
-    // Contenedor principal
-    <main className="w-full">
-      {/* === Sección del Banner === */}
+    <main>
       <PageBannerImage
-        src="/empresa.png" // Ruta a tu imagen en la carpeta /public
-        alt="Vista exterior de las instalaciones de la empresa" // Describe la imagen
-        priority={true} // Priorizar carga
+        src="/empresa.png"
+        alt="Vista exterior de las instalaciones de la empresa"
+        priority={true}
       />
 
-      {/* === Sección Introductoria === */}
-      {/* Contenedor para centrar y añadir padding */}
-      <div className="container mx-auto px-4 py-8 md:py-12">
-        <AboutIntro
-          titleBlueText="SOBRE"
-          titleRedText="NOSOTROS"
-          introParagraph={introText}
-        />
-      </div>
-      <div>
+      <section className="w-full max-w-7xl mx-auto px-4">
+        <AboutIntro />
         <HistorySectionScroll />
-      </div>
-    </main> // Cierre de <main>
-  ); // Cierre de return
-} // Cierre de la función QuienesSomosPage
+
+        <motion.div
+          className="w-full max-w-7xl mx-auto py-6"
+          initial={{ opacity: 0, y: 60 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.2, ease: "easeOut" }}
+          viewport={{ once: true, amount: 0.6 }}
+        >
+          <h1 className="font-extrabold text-3xl md:text-4xl lg:text-5xl text-red-500 mb-4 font-archivo">
+            MISIÓN
+          </h1>
+          <p className="text-base md:text-lg lg:text-xl text-gray-700 leading-relaxed text-justify font-archivo">
+            Diseñar, fabricar y comercializar pinturas y/o recubrimientos de
+            alta calidad y valor agregado; utilizando tecnología avanzada,
+            materias primas selectas y talento humano calificado y comprometido
+            con el mejoramiento continuo del desempeño global de la
+            organización, a fin de satisfacer las necesidades y expectativas de
+            nuestros clientes, proteger el medio ambiente, contribuir al
+            desarrollo del Ecuador y lograr el crecimiento y rentabilidad de la
+            organización.
+          </p>
+        </motion.div>
+
+        <VisionPolitica />
+        <ResponsabilidadSocial />
+        <Certificaciones />
+      </section>
+    </main>
+  );
+}

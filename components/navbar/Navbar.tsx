@@ -31,7 +31,6 @@ const Navbar = forwardRef<HTMLDivElement>((props, ref) => {
       }`}
     >
       <nav className="container mx-auto flex items-center justify-between py-4 px-6">
-        {/* Logo */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -46,6 +45,7 @@ const Navbar = forwardRef<HTMLDivElement>((props, ref) => {
               alt="Logo America"
               width={160}
               height={60}
+              className="w-28 sm:w-32 md:w-36 lg:w-40 xl:w-44 h-auto"
             />
           </Link>
         </motion.div>
@@ -79,8 +79,6 @@ const Navbar = forwardRef<HTMLDivElement>((props, ref) => {
     </header>
   );
 });
-
-// NECESARIO para usar forwardRef
 Navbar.displayName = "Navbar";
 
 export default Navbar;

@@ -1,77 +1,53 @@
-// app/QuienesSomos/components/AboutIntro.tsx
-"use client"; // Necesario para Framer Motion
+"use client";
 
-import React from "react";
-import SectionHeader from "./SectionHeader"; // Importamos el SectionHeader simplificado
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion"; // Importamos motion
 
-// --- Variante de Animación para los Items ---
-// Define cómo se ve el elemento en estado oculto y visible
-// El timing exacto se controla con la prop 'transition' en cada elemento
 const itemVariants = {
-  hidden: {
-    opacity: 0,
-    y: 20, // Empieza invisible y 20px abajo
-  },
-  visible: {
-    opacity: 1,
-    y: 0, // Termina visible y en su posición Y original
-  },
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0 },
 };
-// --- Fin Variante ---
 
-interface AboutIntroProps {
-  titleBlueText: string;
-  titleRedText: string;
-  introParagraph: string;
-  className?: string;
-}
+export default function AboutIntro() {
+  const introText =
+    "En Pinturas América S.A. contamos con más de 25 años de experiencia en la elaboración y comercialización de recubrimientos orgánicos e inorgánicos como pinturas, resinas, tintas y disolventes. Atendemos los sectores industrial, naval, petrolero, automotriz, arquitectónico, entre otros, brindando asesoría técnica especializada y productos de alta calidad. Nuestra planta matriz, ubicada en un parque industrial moderno y ecológico, cuenta con el laboratorio más completo del país, reflejando nuestro compromiso con la innovación, la sostenibilidad y el crecimiento constante.";
 
-const AboutIntro: React.FC<AboutIntroProps> = ({
-  titleBlueText,
-  titleRedText,
-  introParagraph,
-  className,
-}) => {
   return (
-    // Contenedor principal que dispara la animación al entrar en vista
     <motion.section
-      // Clases CSS exactas del último código que pasaste
-      className={cn("py-8 md:py-12", className)}
-      initial="hidden" // Empieza con los hijos en estado 'hidden'
-      whileInView="visible" // Anima los hijos a 'visible' cuando entre en pantalla
-      viewport={{ once: true, amount: 0.55 }} // Disparar una vez cuando 30% esté visible
+      className="py-12"
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.55 }}
     >
-      {/* Wrapper para animar el Título con su delay específico */}
-      <motion.div
-        className="mb-8 md:mb-10 font-archivo" // Añadido margen inferior para separar del párrafo
-        variants={itemVariants}
-        // Transición específica para el título
-        transition={{ delay: 0.4, duration: 0.5, ease: "easeOut" }}
-      >
-        <SectionHeader blueText={titleBlueText} redText={titleRedText} />
-      </motion.div>
+      <h2 className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-center font-archivo flex justify-center gap-2">
+        <motion.span
+          className="text-blue-800"
+          variants={itemVariants}
+          transition={{ delay: 0.4, duration: 0.5, ease: "easeOut" }}
+        >
+          SOBRE
+        </motion.span>
+        <motion.span
+          className="text-red-500"
+          variants={itemVariants}
+          transition={{ delay: 0.6, duration: 0.5, ease: "easeOut" }}
+        >
+          NOSOTROS
+        </motion.span>
+      </h2>
 
-      {/* Párrafo animado con su delay específico */}
       <motion.p
-        // Clases CSS exactas del último código que pasaste
         className={cn(
-          "text-justify tracking-wider",
+          "text-justify tracking-wide",
           "text-gray-800 dark:text-gray-300",
-          "px-10 mx-auto", // Clases tal cual las pasaste
-          "text-lg",
-          "leading-relaxed",
-          "font-archivo"
+          "text-base md:text-lg lg:text-xl leading-relaxed font-archivo",
+          "py-6"
         )}
         variants={itemVariants}
-        // Transición específica para el párrafo (0.4s después del título)
         transition={{ delay: 0.8, duration: 0.5, ease: "easeOut" }}
       >
-        {introParagraph}
+        {introText}
       </motion.p>
     </motion.section>
   );
-};
-
-export default AboutIntro;
+}
