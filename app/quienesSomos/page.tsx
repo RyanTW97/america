@@ -21,6 +21,7 @@ export default function QuienesSomosPage() {
 
       <section className="w-full max-w-7xl mx-auto px-4">
         <AboutIntro />
+        <div id="historia" className="relative -top-32 h-0" />
         <HistorySectionScroll />
 
         <motion.div

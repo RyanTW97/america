@@ -59,8 +59,9 @@ const HistorySectionScroll = () => {
 
   return (
     <motion.section
+      id="historia"
       ref={sectionRef}
-      className="relative w-full py-16 overflow-hidden bg-white text-gray-800"
+      className="relative w-full py-16 overflow-hidden bg-white text-gray-800 scroll-mt-80"
       initial="hidden"
       whileInView="visible"
       viewport={{ amount: 0.5 }}

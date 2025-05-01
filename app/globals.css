@@ -136,3 +136,7 @@
 .animate-slide-in-left {
   animation: slide-in-left 0.4s ease-out;
 }
+
+html {
+  @apply scroll-smooth;
+}

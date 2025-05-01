@@ -8,7 +8,7 @@ const ResponsabilidadSocial: React.FC = () => {
   return (
     <section className="w-full max-w-7xl mx-auto">
       {/* Hoja animada */}
-      <div className="flex justify-center -my-10">
+      <div id="responsabilidad-social" className="flex justify-center -my-10">
         <motion.div
           className="relative w-48 h-60"
           initial={{ opacity: 0, x: 40, y: -40, rotate: 15 }}

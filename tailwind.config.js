@@ -34,6 +34,7 @@ module.exports = {
         80: "0.80",
         90: "0.90",
       },
+      scrollBehavior: ["responsive"],
     },
   },
   plugins: [],
