@@ -68,7 +68,11 @@ export default function NoticiasCarousel() {
               key={index}
               className="pl-4 basis-full sm:basis-1/2 md:basis-1/3"
             >
-              <CardNoticia titulo={noticia.titulo} imagen={noticia.imagen} />
+              <CardNoticia
+                titulo={noticia.titulo}
+                imagen={noticia.imagen}
+                index={index}
+              />
             </CarouselItem>
           ))}
         </CarouselContent>
