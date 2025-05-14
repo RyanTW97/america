@@ -48,7 +48,7 @@ const HistorySectionScroll = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveStep((prev) => (prev < historySteps.length - 1 ? prev + 1 : 0));
-    }, 22000);
+    }, 10000);
     return () => clearInterval(interval);
   }, []);
 
@@ -59,7 +59,6 @@ const HistorySectionScroll = () => {
 
   return (
     <motion.section
-      id="historia"
       ref={sectionRef}
       className="relative w-full py-16 overflow-hidden bg-white text-gray-800 scroll-mt-80"
       initial="hidden"

@@ -18,8 +18,8 @@ const ResponsabilidadSocial: React.FC = () => {
           <motion.div
             className="w-full h-full"
             animate={{
-              x: [0, 15, 0, -15, 0],
-              y: [0, 10, 20, 10, 0],
+              x: [0, 30, 0, -30, 0],
+              y: [0, 20, 30, 20, 0],
               rotate: [0, 5, 0, -5, 0],
             }}
             transition={{

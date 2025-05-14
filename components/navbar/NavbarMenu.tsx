@@ -45,7 +45,8 @@ export const NavbarMenu = () => {
           <Popover open={quienesOpen} onOpenChange={setQuienesOpen}>
             <PopoverTrigger asChild>
               <span className={`${baseLink} py-2 cursor-pointer`}>
-                QUIENES SOMOS
+                <Link href="/quienesSomos">QUIENES SOMOS</Link>
+
                 <span
                   className={`${underline} ${
                     pathname.startsWith("/quienesSomos")
@@ -106,7 +107,8 @@ export const NavbarMenu = () => {
           <Popover open={productosOpen} onOpenChange={setProductosOpen}>
             <PopoverTrigger asChild>
               <span className={`${baseLink} py-2 cursor-pointer`}>
-                NUESTROS PRODUCTOS
+                <Link href="/nuestros-productos">NUESTROS PRODUCTOS</Link>
+
                 <span
                   className={`${underline} ${
                     pathname.startsWith("/nuestros-productos")
@@ -156,51 +158,22 @@ export const NavbarMenu = () => {
           onMouseLeave={() => setCapacitacionOpen(false)}
           className="inline-flex"
         >
-          <Popover open={capacitacionOpen} onOpenChange={setCapacitacionOpen}>
-            <PopoverTrigger asChild>
-              <span className={`${baseLink} py-2 cursor-pointer`}>
-                CENTRO DE CAPACITACIÓN
-                <span
-                  className={`${underline} ${
-                    pathname.startsWith("/centro-de-capacitacion")
-                      ? "scale-x-100"
-                      : "scale-x-0"
-                  }`}
-                />
-              </span>
-            </PopoverTrigger>
-            <PopoverContent
-              align="start"
-              className="p-2 rounded-md shadow-lg border bg-white animate-in fade-in slide-in-from-top-1"
-            >
-              <div className="flex flex-col text-sm font-medium w-72">
-                {[
-                  {
-                    label: "Manuales de los productos por líneas",
-                    href: "/centro-de-capacitacion#manuales",
-                  },
-                  {
-                    label: "Sistemas de Aplicación",
-                    href: "/centro-de-capacitacion#sistemas",
-                  },
-                  {
-                    label: "Videos tutoriales",
-                    href: "/centro-de-capacitacion#videos",
-                  },
-                ].map((item, index, arr) => (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={`px-4 py-2 hover:text-red-500 border-b border-gray-200 ${
-                      index === arr.length - 1 ? "border-b-0" : ""
+          <Link href="/centro-de-capacitacion">
+            <Popover open={capacitacionOpen} onOpenChange={setCapacitacionOpen}>
+              <PopoverTrigger asChild>
+                <span className={`${baseLink} py-2 cursor-pointer`}>
+                  CENTRO DE CAPACITACIÓN
+                  <span
+                    className={`${underline} ${
+                      pathname.startsWith("/centro-de-capacitacion")
+                        ? "scale-x-100"
+                        : "scale-x-0"
                     }`}
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
+                  />
+                </span>
+              </PopoverTrigger>
+            </Popover>
+          </Link>
         </div>
       </li>
 

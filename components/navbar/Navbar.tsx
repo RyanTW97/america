@@ -58,7 +58,9 @@ const Navbar = forwardRef<HTMLDivElement>((props, ref) => {
         {/* Right icons + Mobile Menu */}
         <div className="flex items-center gap-4">
           <Search className="w-8 h-8 stroke-[1] cursor-pointer transition-transform duration-300 hover:scale-110 hover:stroke-red-500" />
-          <Heart className="w-8 h-8 stroke-[1] cursor-pointer transition-transform duration-300 hover:scale-110 hover:stroke-red-500" />
+          <Link href="/favorites">
+            <Heart className="w-8 h-8 stroke-[1] cursor-pointer transition-transform duration-300 hover:scale-110 hover:stroke-red-500" />
+          </Link>
 
           {/* Mobile */}
           <div className="lg:hidden">

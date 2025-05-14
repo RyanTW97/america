@@ -3,7 +3,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import PageBannerImage from "./components/pageBannerImage";
+import PageBannerImage from "../../components/pageBannerImage";
 import AboutIntro from "./components/AboutIntro";
 import HistorySectionScroll from "./components/HistorySectionScroll";
 import VisionPolitica from "./components/VisionPolitica";
@@ -31,9 +31,13 @@ export default function QuienesSomosPage() {
           transition={{ duration: 1.2, ease: "easeOut" }}
           viewport={{ once: true, amount: 0.6 }}
         >
-          <h1 className="font-extrabold text-3xl md:text-4xl lg:text-5xl text-red-500 mb-4 font-archivo">
-            MISIÓN
-          </h1>
+          <div className="flex">
+            <h1 className="font-extrabold text-3xl md:text-4xl lg:text-5xl text-red-500 mb-4 font-archivo">
+              MISIÓN
+            </h1>
+            <hr />
+          </div>
+
           <p className="text-base md:text-lg lg:text-xl text-gray-700 leading-relaxed text-justify font-archivo">
             Diseñar, fabricar y comercializar pinturas y/o recubrimientos de
             alta calidad y valor agregado; utilizando tecnología avanzada,

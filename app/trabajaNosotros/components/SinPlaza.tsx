@@ -1,4 +1,4 @@
-// components/Imagen.js
+
 import Image from "next/image";
 
 const SinPlaza = () => {

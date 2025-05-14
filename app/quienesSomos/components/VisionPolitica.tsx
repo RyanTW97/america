@@ -9,12 +9,13 @@ const VisionPolitica: React.FC = () => {
     <div className="w-full mx-auto rounded-lg md:flex min-h-screen py-14">
       {/* Imagen */}
       <motion.div
-        className="relative w-full h-64 md:h-auto md:w-1/2"
+        className="relative w-full h-64 md:h-auto md:w-1/2 "
         initial={{ opacity: 0, x: -50 }}
         whileInView={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.8, ease: "easeOut" }}
         viewport={{ once: true, amount: 0.3 }}
       >
+        {/*Aplicar borde a la imagen*/}
         <Image
           src="/bodega.png"
           alt="Interior de una bodega con estanterías y productos"
@@ -22,6 +23,7 @@ const VisionPolitica: React.FC = () => {
           style={{ objectFit: "cover" }}
           sizes="(max-width: 768px) 100vw, 50vw"
           priority
+          className="rounded-2xl"
         />
       </motion.div>
 
