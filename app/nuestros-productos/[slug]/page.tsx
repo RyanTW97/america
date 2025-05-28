@@ -1,5 +1,6 @@
 // app/nuestros-productos/[slug]/page.tsx
 // @ts-nocheck
+// @ts-ignore
 import Link from "next/link";
 import ProductDetailHeader from "./components/ProductDetailHeader";
 import ProductDetails from "./components/ProductDatails"; // Corregido: Debería ser ProductDetails
