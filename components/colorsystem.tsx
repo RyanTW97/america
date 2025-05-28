@@ -15,10 +15,10 @@ export default function ColorSystem() {
     >
       {/* Imagen principal sin animación */}
       <Image
-        src="/color-system.png"
+        src="/colorsystem.webp"
         alt="Color System"
-        width={1200}
-        height={500}
+        width={1440}
+        height={360}
         className="h-auto w-full"
       />
 

@@ -1,15 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
 
 export default function ProductoDestacado() {
-  const [mensaje, setMensaje] = useState("");
-
-  const handleCotizar = () => {
-    alert("implementar link whatsapp");
-  };
-
   return (
     <section
       style={{
@@ -34,10 +27,10 @@ export default function ProductoDestacado() {
         {/* Imagen del producto */}
         <div className="flex justify-center">
           <Image
-            src="/impermlastic.png"
+            src="/imper.webp"
             alt="Producto Impermlastic"
-            width={300}
-            height={420}
+            width={780}
+            height={1000}
             className="object-contain"
           />
         </div>
@@ -56,12 +49,14 @@ export default function ProductoDestacado() {
             ¡Máxima durabilidad y calidad garantizada!
           </p>
 
-          <button
-            onClick={handleCotizar}
-            className="mt-6 px-8 py-4 text-base rounded-full bg-neutral-200 bg-opacity-90 border-2 border-blue-800 text-blue-800 font-semibold hover:bg-blue-800 hover:text-white transition"
+          <a
+            href="https://wa.link/fmvzgh"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mt-6 px-8 py-4 text-base rounded-full bg-neutral-200 bg-opacity-90 border-2 border-blue-800 text-blue-800 font-semibold hover:bg-blue-800 hover:text-white transition"
           >
             COTIZAR PRODUCTO →
-          </button>
+          </a>
         </div>
       </div>
     </section>

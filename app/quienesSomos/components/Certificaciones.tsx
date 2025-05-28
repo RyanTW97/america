@@ -28,7 +28,10 @@ export default function Certificaciones() {
             ease: "easeInOut",
           }}
         >
-          <Link href="/" className="rounded-full p-2 text-red-500">
+          <Link
+            href="/certificaciones"
+            className="rounded-full p-2 text-red-500"
+          >
             <CircleArrowRight size={38} />
           </Link>
         </motion.div>

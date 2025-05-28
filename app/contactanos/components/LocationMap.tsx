@@ -18,7 +18,7 @@ export default function LocationMap() {
 
       <div className="mt-10 rounded-2xl overflow-hidden shadow-md">
         <iframe
-          src="https://www.google.com/maps?q=-0.35050674621757766,-78.54487398532294&z=18&output=embed"
+          src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d1790.243434626417!2d-78.54573334528453!3d-0.35078927777785884!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x91d585f54d8a3351%3A0xb0e4f1ac2e205cc9!2sPinturas%20Am%C3%A9rica%20S.A.!5e0!3m2!1ses!2sec!4v1747836323158!5m2!1ses!2sec"
           width="100%"
           height="450"
           style={{ border: 0 }}

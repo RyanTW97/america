@@ -11,7 +11,7 @@ export default function ContactDetails() {
         <h2 className="text-6xl font-extrabold text-blue-950 mb-4">
           Horario de Atención
         </h2>
-        <div className="flex  items-center justify-center gap-2 text-lg text-gray-700">
+        <div className="flex items-center justify-center gap-2 text-lg text-gray-700">
           <Clock size={40} className="text-blue-700" />
           <p>08:00 Am a 16:30 Pm</p>
         </div>
@@ -28,24 +28,46 @@ export default function ContactDetails() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-center">
           {/* WhatsApp */}
-          <div className="flex flex-col items-center gap-2 text-[#1D1E8D]">
-            <FaWhatsapp size={40} />
+          <a
+            href="https://wa.me/5930992585394"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-col items-center gap-2 text-[#1D1E8D] transition-transform transform hover:scale-110 group"
+          >
+            <FaWhatsapp
+              size={40}
+              className="transition-colors group-hover:text-green-500"
+            />
             <p className="text-base font-medium">+593 099 258 5394</p>
-          </div>
+          </a>
 
           {/* Email */}
-          <div className="flex flex-col items-center gap-2 text-[#1D1E8D]">
-            <Mail size={40} strokeWidth={1.5} />
+          <a
+            href="mailto:ventas@pinturasamerica.com"
+            className="flex flex-col items-center gap-2 text-[#1D1E8D] transition-transform transform hover:scale-110 group"
+          >
+            <Mail
+              size={40}
+              strokeWidth={1.5}
+              className="transition-colors group-hover:text-[#F44336]"
+            />
             <p className="text-base font-medium">ventas@pinturasamerica.com</p>
-          </div>
+          </a>
 
           {/* Teléfono */}
-          <div className="flex flex-col items-center gap-2 text-[#1D1E8D]">
-            <Phone size={40} strokeWidth={1.5} />
+          <a
+            href="tel:024758123"
+            className="flex flex-col items-center gap-2 text-[#1D1E8D] transition-transform transform hover:scale-110 group"
+          >
+            <Phone
+              size={40}
+              strokeWidth={1.5}
+              className="transition-colors group-hover:text-blue-500"
+            />
             <p className="text-base font-medium">
               Teléfono: (02)4758-123/124/125
             </p>
-          </div>
+          </a>
         </div>
       </div>
 
@@ -58,9 +80,45 @@ export default function ContactDetails() {
           Síguenos
         </h3>
         <div className="flex justify-center items-center gap-6 mb-2 text-[#1D1E8D]">
-          <FaFacebookF size={24} />
-          <FaInstagram size={24} />
-          <FaTiktok size={24} />
+          {/* Facebook */}
+          <a
+            href="https://www.facebook.com/pintamer"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-transform transform hover:scale-150 group"
+            aria-label="Facebook"
+          >
+            <FaFacebookF
+              size={40}
+              className="transition-colors group-hover:text-blue-700"
+            />
+          </a>
+          {/* Instagram */}
+          <a
+            href="https://www.instagram.com/pinturas_america_s.a/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-transform transform hover:scale-125 group"
+            aria-label="Instagram"
+          >
+            <FaInstagram
+              size={40}
+              className="transition-colors group-hover:text-[#F44336]"
+            />
+          </a>
+          {/* TikTok */}
+          <a
+            href="https://www.tiktok.com/@pinturas_america_s.a"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-transform transform hover:scale-125 group"
+            aria-label="TikTok"
+          >
+            <FaTiktok
+              size={40}
+              className="transition-colors group-hover:text-black"
+            />
+          </a>
         </div>
         <p className="text-[#1D1E8D] font-medium text-lg">@Pinturas América</p>
       </div>

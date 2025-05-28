@@ -14,7 +14,7 @@ export default function QuienesSomosPage() {
   return (
     <main>
       <PageBannerImage
-        src="/empresa.png"
+        src="/empresa.webp"
         alt="Vista exterior de las instalaciones de la empresa"
         priority={true}
       />

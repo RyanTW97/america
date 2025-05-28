@@ -1,46 +1,44 @@
-// components/ProductCarousel.tsx
+// app/nuestros-productos/[slug]/components/RelatedProductsByLine.tsx
 // @ts-nocheck
-"use client"; // <--- AÑADIR ESTO PARA HACERLO UN CLIENT COMPONENT
+"use client";
 
 import Slider from "react-slick";
 // 1. VERIFICA ESTA RUTA: Asegúrate que apunte a tu ProductCard optimizado
 // que espera la prop `product: Product`.
 import ProductCard from "@/components/ProductCard";
 import { Product } from "@/app/types";
-// Titulo ya no se usa aquí si el título "Productos Destacados" se maneja en page.tsx
-// import Titulo from "@/components/generales/titulo";
+import Titulo from "@/components/generales/titulo";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import Titulo from "./generales/titulo";
 
-interface ProductCarouselProps {
-  products: Product[]; // Recibe los productos como prop
+interface RelatedProductsByLineProps {
+  lineaNombre: string;
+  relatedProducts: Product[] | null;
 }
 
-const ProductCarousel = ({ products }: ProductCarouselProps) => {
-  // Ya no se hace fetch aquí, los productos vienen como props.
-
-  if (!products || products.length === 0) {
-    return (
-      <div className="my-16 px-4 text-center text-zinc-500 md:px-8">
-        {/* <p className="mt-4">No hay productos destacados en este momento.</p> */}
-      </div>
-    );
+const RelatedProductsByLine = ({
+  lineaNombre,
+  relatedProducts,
+}: RelatedProductsByLineProps) => {
+  if (!relatedProducts || relatedProducts.length === 0) {
+    return null;
   }
 
-  const productCount = products.length;
+  const productCount = relatedProducts.length;
+
+  // Define base slidesToShow, y luego ajústalo si es necesario
   let baseSlidesToShow = Math.min(6, productCount);
 
   const settings = {
     dots: true,
-    infinite: productCount > baseSlidesToShow,
+    infinite: productCount > baseSlidesToShow, // 'infinite' si hay más productos que los que se muestran
     speed: 500,
     slidesToShow: baseSlidesToShow,
     slidesToScroll: 1,
     autoplay: true,
-    autoplaySpeed: 2500,
+    autoplaySpeed: 3000,
     pauseOnHover: true,
-    arrows: productCount > baseSlidesToShow,
+    arrows: productCount > baseSlidesToShow, // 'arrows' si hay más productos que los que se muestran
     responsive: [
       {
         breakpoint: 1536, // 2xl
@@ -85,7 +83,7 @@ const ProductCarousel = ({ products }: ProductCarouselProps) => {
         },
       },
       {
-        breakpoint: 480, // xs
+        breakpoint: 480, // xs más pequeños
         settings: {
           slidesToShow: 1,
           arrows: false,
@@ -97,13 +95,23 @@ const ProductCarousel = ({ products }: ProductCarouselProps) => {
     ],
   };
 
+  // No es necesario el bucle posterior para actualizar 'infinite' y 'arrows' en 'responsive'
+  // porque ya se calculan con Math.min(X, productCount) directamente.
+
   return (
-    // El contenedor principal y el título ahora se manejan en page.tsx
-    // para esta instancia del carrusel.
-    <div>
-      <Titulo azul="MÁS" blanco="PRODUCTOS" />
+    <div className="my-12 px-4 md:my-16 lg:px-8 xl:px-16">
+      <div className="mb-4 flex items-center justify-center">
+        <Titulo azul="MÁS" blanco="PRODUCTOS" />
+      </div>
+      <div className="mb-8 flex items-center gap-4">
+        <h3 className="whitespace-nowrap text-lg font-medium text-blue-700 sm:text-xl">
+          Línea {lineaNombre}
+        </h3>
+        <hr className="w-full border-t-2 border-zinc-300" />
+      </div>
+
       <Slider {...settings} className="-mx-2 sm:-mx-3">
-        {products.map((product) => (
+        {relatedProducts.map((product) => (
           <div key={product.id} className="px-2 py-4 sm:px-3">
             <ProductCard product={product} />
           </div>
@@ -113,4 +121,4 @@ const ProductCarousel = ({ products }: ProductCarouselProps) => {
   );
 };
 
-export default ProductCarousel;
+export default RelatedProductsByLine;

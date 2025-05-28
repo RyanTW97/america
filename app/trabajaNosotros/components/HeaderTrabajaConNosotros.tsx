@@ -8,7 +8,7 @@ const HeaderTrabajaConNosotros = () => {
     <div className="relative w-full overflow-hidden">
       <div className="relative w-full h-[300px] sm:h-[380px] md:h-[450px] lg:h-[520px]">
         <Image
-          src="/trabajaNosotros.png"
+          src="/trabajo.webp"
           alt="Trabaja con nosotros"
           width={1440}
           height={540}
