@@ -235,6 +235,7 @@ async function getFeaturedProducts(): Promise<Product[]> {
 // --- COMPONENTE DE PÁGINA ---
 interface ProductDetailPageProps {
   params: { slug: string };
+  searchParams?: { [key: string]: string | string[] | undefined }; // Añadido searchParams opcional
 }
 
 export default async function ProductDetailPage({
