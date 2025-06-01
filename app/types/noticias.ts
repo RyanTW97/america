@@ -1,12 +1,14 @@
-// app/types/noticias.ts (Asegúrate de que este archivo exista y esté actualizado)
-// Basado en tu JSON y discusiones previas.
+// app/types/noticias.ts
 
+// --- Tipos genéricos de Strapi (simplificados) ---
 export interface StrapiRichTextChild {
   type: "text";
   text: string;
   bold?: boolean;
   italic?: boolean;
-  // ... otros estilos si los usas
+  underline?: boolean;
+  strikethrough?: boolean;
+  code?: boolean;
 }
 
 export interface StrapiRichTextParagraph {
@@ -24,6 +26,7 @@ export interface StrapiImageFormat {
   height: number;
   size: number;
   url: string;
+  sizeInBytes?: number;
 }
 
 export interface StrapiImageAttributes {
@@ -39,10 +42,10 @@ export interface StrapiImageAttributes {
     thumbnail?: StrapiImageFormat;
   };
   url: string;
-  hash: string; // Añadido por si acaso
-  ext: string; // Añadido por si acaso
-  mime: string; // Añadido por si acaso
-  size: number; // Añadido por si acaso
+  hash: string;
+  ext: string;
+  mime: string;
+  size: number;
   previewUrl: string | null;
   provider: string;
   provider_metadata: any | null;
@@ -50,24 +53,34 @@ export interface StrapiImageAttributes {
   updatedAt: string;
 }
 
-export interface StrapiImageData {
+export interface StrapiMediaObject {
   id: number;
   attributes: StrapiImageAttributes;
 }
 
+// ► Hacemos que 'data' sea siempre un arreglo (o null) ◀
+export interface StrapiMedia {
+  data: StrapiMediaObject[] | null;
+}
+
+export interface StrapiPagination {
+  page: number;
+  pageSize: number;
+  pageCount: number;
+  total: number;
+}
+
+// --- Tipos específicos de noticias ---
+
 export interface NoticiaAttributes {
-  Titulo: string; // Coincide con tu JSON
-  slug: string; // Coincide con tu JSON
+  Titulo: string;
+  slug: string;
   parrafo1?: StrapiRichTextParagraph[] | null;
   parrafo2?: StrapiRichTextParagraph[] | null;
   parrafo3?: StrapiRichTextParagraph[] | null;
-  imagenes?: {
-    data: StrapiImageData[] | null;
-  } | null;
-  createdAt: string;
-  updatedAt: string;
   publishedAt: string;
-  // Añade aquí cualquier otro campo que tengan tus noticias
+  imagenes?: StrapiMedia | null;
+  // Agrega aquí cualquier otro campo que devuelva tu Strapi para la colección 'noticias'
 }
 
 export interface Noticia {
@@ -78,11 +91,6 @@ export interface Noticia {
 export interface StrapiNoticiasResponse {
   data: Noticia[];
   meta: {
-    pagination: {
-      page: number;
-      pageSize: number;
-      pageCount: number;
-      total: number;
-    };
+    pagination: StrapiPagination;
   };
 }

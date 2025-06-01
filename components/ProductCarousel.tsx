@@ -1,14 +1,13 @@
 // components/ProductCarousel.tsx
-// @ts-nocheck
-"use client"; // <--- AÑADIR ESTO PARA HACERLO UN CLIENT COMPONENT
+"use client";
 
 import Slider from "react-slick";
 // 1. VERIFICA ESTA RUTA: Asegúrate que apunte a tu ProductCard optimizado
 // que espera la prop `product: Product`.
 import ProductCard from "@/components/ProductCard";
 import { Product } from "@/app/types";
-// Titulo ya no se usa aquí si el título "Productos Destacados" se maneja en page.tsx
-// import Titulo from "@/components/generales/titulo";
+// El Titulo se maneja en la página que usa este carrusel, así que no es necesario aquí.
+// import Titulo from "./generales/titulo";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import Titulo from "./generales/titulo";
@@ -18,90 +17,85 @@ interface ProductCarouselProps {
 }
 
 const ProductCarousel = ({ products }: ProductCarouselProps) => {
-  // Ya no se hace fetch aquí, los productos vienen como props.
-
   if (!products || products.length === 0) {
-    return (
-      <div className="my-16 px-4 text-center text-zinc-500 md:px-8">
-        {/* <p className="mt-4">No hay productos destacados en este momento.</p> */}
-      </div>
-    );
+    return null;
   }
 
   const productCount = products.length;
-  let baseSlidesToShow = Math.min(6, productCount);
+  // Base slidesToShow para las pantallas más grandes (ej: 2xl y mayores)
+  const baseSlidesToShow = Math.min(6, productCount);
 
   const settings = {
     dots: true,
     infinite: productCount > baseSlidesToShow,
     speed: 500,
-    slidesToShow: baseSlidesToShow,
+    slidesToShow: baseSlidesToShow, // Inicia con 6 (o menos si hay pocos productos)
     slidesToScroll: 1,
     autoplay: true,
-    autoplaySpeed: 2500,
+    autoplaySpeed: 3000,
     pauseOnHover: true,
     arrows: productCount > baseSlidesToShow,
     responsive: [
       {
-        breakpoint: 1536, // 2xl
+        breakpoint: 1536, // Tailwind 2xl
         settings: {
-          slidesToShow: Math.min(5, productCount),
+          slidesToShow: Math.min(6, productCount), // Mantener 6 en 2xl
+          arrows: productCount > Math.min(6, productCount),
+          infinite: productCount > Math.min(6, productCount),
+        },
+      },
+      {
+        breakpoint: 1280, // Tailwind xl
+        settings: {
+          slidesToShow: Math.min(5, productCount), // Mostrar 5 en xl
           arrows: productCount > Math.min(5, productCount),
           infinite: productCount > Math.min(5, productCount),
         },
       },
       {
-        breakpoint: 1280, // xl
+        breakpoint: 1024, // Tailwind lg
         settings: {
-          slidesToShow: Math.min(4, productCount),
+          slidesToShow: Math.min(4, productCount), // Mostrar 4 en lg
           arrows: productCount > Math.min(4, productCount),
           infinite: productCount > Math.min(4, productCount),
         },
       },
       {
-        breakpoint: 1024, // lg
+        breakpoint: 768, // Tailwind md
         settings: {
-          slidesToShow: Math.min(3, productCount),
+          slidesToShow: Math.min(3, productCount), // Mostrar 3 en md
           arrows: productCount > Math.min(3, productCount),
           infinite: productCount > Math.min(3, productCount),
         },
       },
       {
-        breakpoint: 768, // md
+        breakpoint: 640, // Tailwind sm
         settings: {
-          slidesToShow: Math.min(2, productCount),
+          slidesToShow: Math.min(2, productCount), // Mostrar 2 en sm
           arrows: productCount > Math.min(2, productCount),
           infinite: productCount > Math.min(2, productCount),
+          centerMode: false, // Usualmente no se necesita centerMode si muestras 2
+          // centerPadding: productCount > 1 ? "40px" : "0px", // No necesario si no es centerMode
         },
       },
       {
-        breakpoint: 640, // sm
+        breakpoint: 480, // Móviles más pequeños que sm
         settings: {
           slidesToShow: 1,
-          arrows: productCount > 1,
+          arrows: productCount > 1, // Flechas si hay más de 1
           infinite: productCount > 1,
-          centerMode: productCount > 1,
-          centerPadding: productCount > 1 ? "40px" : "0px",
-        },
-      },
-      {
-        breakpoint: 480, // xs
-        settings: {
-          slidesToShow: 1,
-          arrows: false,
-          infinite: productCount > 1,
-          centerMode: productCount > 1,
-          centerPadding: productCount > 1 ? "20px" : "0px",
+          centerMode: true, // CenterMode es bueno para 1 slide visible
+          centerPadding: "20px", // Un poco de padding para ver los slides adyacentes
         },
       },
     ],
   };
 
   return (
-    // El contenedor principal y el título ahora se manejan en page.tsx
-    // para esta instancia del carrusel.
     <div>
-      <Titulo azul="MÁS" blanco="PRODUCTOS" />
+      <div className="mb-4 flex items-center justify-center">
+        <Titulo azul="MÁS" blanco="PRODUCTOS" />
+      </div>
       <Slider {...settings} className="-mx-2 sm:-mx-3">
         {products.map((product) => (
           <div key={product.id} className="px-2 py-4 sm:px-3">

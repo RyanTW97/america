@@ -1,8 +1,9 @@
 // app/types/productPage.ts
 
+// ------------------------------------------------------------
 // --- Tipos Genéricos de Strapi (Simplificados) ---
+// ------------------------------------------------------------
 
-// Para Rich Text de Strapi
 export interface StrapiRichTextChild {
   type: "text";
   text: string;
@@ -18,7 +19,6 @@ export interface StrapiRichTextParagraph {
   children: StrapiRichTextChild[];
 }
 
-// Para Campos de Media de Strapi (Imágenes, PDFs, etc.)
 export interface StrapiImageFormat {
   name: string;
   hash: string;
@@ -27,9 +27,9 @@ export interface StrapiImageFormat {
   path: string | null;
   width: number;
   height: number;
-  size: number; // en KB
+  size: number;
   url: string;
-  sizeInBytes?: number; // A veces Strapi lo incluye
+  sizeInBytes?: number;
 }
 
 export interface StrapiImageAttributes {
@@ -39,20 +39,19 @@ export interface StrapiImageAttributes {
   width: number;
   height: number;
   formats?: {
-    // Formats puede ser opcional o tener formatos específicos
     large?: StrapiImageFormat;
     small?: StrapiImageFormat;
     medium?: StrapiImageFormat;
     thumbnail?: StrapiImageFormat;
   };
-  url: string; // URL principal de la imagen/archivo
+  url: string;
   hash: string;
   ext: string;
   mime: string;
-  size: number; // en KB
+  size: number;
   previewUrl: string | null;
   provider: string;
-  provider_metadata: any | null; // O un tipo más específico si lo conoces
+  provider_metadata: any | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -62,12 +61,11 @@ export interface StrapiMediaObject {
   attributes: StrapiImageAttributes;
 }
 
-// Un campo de Media en Strapi puede ser un solo objeto, un array de objetos, o nulo.
+// `StrapiMedia` puede ser un único archivo o un arreglo de archivos
 export interface StrapiMedia {
   data: StrapiMediaObject | StrapiMediaObject[] | null;
 }
 
-// Para la paginación de Strapi
 export interface StrapiPagination {
   page: number;
   pageSize: number;
@@ -75,73 +73,54 @@ export interface StrapiPagination {
   total: number;
 }
 
+// ------------------------------------------------------------
 // --- Tipos Específicos de Componentes de Producto de Strapi ---
-// Estos son los tipos para los datos que vienen de los *componentes* de Strapi
-// que has añadido a tu Content-Type "ProductosAmerica".
+// ------------------------------------------------------------
 
 export interface ColorItem {
-  // Para el componente 'colores'
   id: number;
   codigoRGB: string;
   nombreColor: string;
-  // __component?: string; // Strapi a veces añade esto, opcional
 }
 
 export interface PresentationItem {
-  // Para el componente 'presentacion'
   id: number;
-  presentacion: string; // ej: "LT", "GL", "CN"
-  // __component?: string;
+  presentacion: string;
 }
 
 export interface VentajaItem {
-  // Para el componente 'ventajas'
   id: number;
   ventaja: string;
-  // __component?: string;
 }
 
-// --- Tipos para la Colección 'LineasAmerica' ---
-// (Asumiendo que 'productos_americas' es una relación dentro de LineasAmerica
-//  y que 'Product' es el tipo para los productos listados allí)
-// Importante: 'Product' debe estar definido, usualmente en un archivo de tipos global o aquí mismo.
-// Por ahora, lo defino de forma simplificada.
-export interface Product {
-  // Tipo simplificado para productos en listas/carruseles
-  id: number;
-  attributes: {
-    titulo: string;
-    slug: string;
-    descripcion?: StrapiRichTextParagraph[];
-    imagen?: StrapiMedia | null;
-    // ... otros campos que ProductCard pueda necesitar
-  };
-}
+// ------------------------------------------------------------
+// --- Tipos para la colección 'LineasAmerica' y productos ---
+// ------------------------------------------------------------
 
-export interface LineasAmericaAttributes {
-  nombre: string;
+//
+// 1) Este tipo solo se usa en portales, listados y carruseles.
+//    Reúne los campos mínimos que necesita, por ejemplo, ProductGrid / ProductCard.
+//
+
+export interface ProductForListingAttributes {
+  titulo: string;
   slug: string;
-  Imagen: StrapiMedia; // Campo de imagen del banner de la línea
-  productos_americas?: {
-    // Relación a los productos destacados/relacionados de esta línea
-    data: Product[] | null;
-  };
-  createdAt: string;
-  updatedAt: string;
-  publishedAt: string;
+  descripcion?: StrapiRichTextParagraph[]; // Opcionalmente se muestra un párrafo breve
+  imagen?: StrapiMedia | null;
+  // NO incluye `createdAt`, `updatedAt` ni `publishedAt` para que sea más ligero.
 }
 
-export interface LineasAmerica {
-  // Tipo para una entrada de la colección LineasAmerica
+export interface ProductForListing {
   id: number;
-  attributes: LineasAmericaAttributes;
+  attributes: ProductForListingAttributes;
 }
 
-// --- Atributos del Producto (de la colección 'ProductosAmerica') ---
-// Esta es la interfaz principal para los atributos de un producto individual
-// que se muestra en la página de detalle.
+//
+// 2) Este tipo representa el producto “completo” cuando vas a la página de detalle.
+//    Contiene campos extra, como `createdAt`, `updatedAt`, relaciones a colores, fichas, etc.
+//
+
 export interface ProductAttributes {
-  // Campos directos
   titulo: string;
   slug: string;
   descripcion: StrapiRichTextParagraph[];
@@ -149,56 +128,89 @@ export interface ProductAttributes {
   brillo?: string | null;
   tiempoSecado?: string | null;
   usoRecomendado?: string | null;
-  varianteColores?: StrapiRichTextParagraph[] | null; // Rich text para "7 tonos directos..."
+  varianteColores?: StrapiRichTextParagraph[] | null;
   norma?: string | null;
-  destacado?: boolean | null; // Para el carrusel de productos destacados
+  destacado?: boolean | null;
+  // En detalle sí requerimos timestamps
   createdAt: string;
   updatedAt: string;
   publishedAt: string;
 
-  // Relaciones y Componentes (populados)
   imagen?: StrapiMedia | null;
   selloCalidad?: StrapiMedia | null;
   colores?: ColorItem[] | null;
   presentacion?: PresentationItem[] | null;
   ventajas?: VentajaItem[] | null;
-  ficha_Tecnica?: StrapiMedia | null; // Asumiendo que es un campo de media para el PDF
+  ficha_Tecnica?: StrapiMedia | null;
 
-  // Relación a LineasAmerica
-  // El 'data' aquí contendrá el objeto LineasAmerica populado (incluyendo su 'Imagen' y 'productos_americas')
+  // Relación con Línea de América (solo en detalle)
   lineas_america?: {
-    data: LineasAmerica | null;
+    data: {
+      id: number;
+      attributes: LineasAmericaAttributes;
+    } | null;
   };
-
-  // ...otros campos directos o relaciones que puedas tener en ProductosAmerica
 }
 
-// --- Tipos para la Página de Detalle del Producto ([slug]/page.tsx) ---
-
-// Para los datos completos de un producto en la página de detalle
 export interface ProductPageData {
   id: number;
   attributes: ProductAttributes;
 }
 
-// Para la respuesta de la API cuando se obtiene un solo producto (o un array si se filtra)
-export interface StrapiSingleProductResponse {
-  data: ProductPageData | ProductPageData[] | null;
-  meta?: {
-    // Podría no haber paginación si es un solo resultado, pero Strapi a veces incluye 'meta' vacío
-    pagination?: StrapiPagination;
+//
+// 3) Tipo para la colección “Líneas de América” (que a su vez trae productos asociados).
+//
+
+export interface LineasAmericaAttributes {
+  nombre: string;
+  slug: string;
+  Imagen: StrapiMedia;
+  // En la vista de detalle de línea aprendes sobre productos en esa línea
+  productos_americas?: {
+    data: ProductForListing[] | null;
   };
+  createdAt: string;
+  updatedAt: string;
+  publishedAt: string;
 }
 
-// --- Props para Componentes Específicos de la Página de Detalle ---
+export interface LineasAmerica {
+  id: number;
+  attributes: LineasAmericaAttributes;
+}
 
-// Para ProductDetails.tsx
+// ------------------------------------------------------------
+// --- Tipos para respuestas de API y props de página ---
+// ------------------------------------------------------------
+
+// Para la respuesta de Strapi al obtener un solo producto (detalle)
+export interface StrapiSingleProductResponse {
+  data: ProductPageData | ProductPageData[] | null;
+  meta?: { pagination?: StrapiPagination };
+}
+
+// Para la respuesta de Strapi al obtener múltiples productos (listados/carruseles)
+export interface StrapiProductsResponse {
+  data: ProductForListing[];
+  meta: { pagination: StrapiPagination };
+}
+
+// Para la respuesta de Strapi al obtener las opciones de filtros
+export interface StrapiFilterCollectionResponse {
+  data: { id: number; attributes: { nombre: string; slug: string } }[];
+  meta: { pagination: StrapiPagination };
+}
+
+// ------------------------------------------------------------
+// --- Props para componentes específicos (detalle) ---
+// ------------------------------------------------------------
+
 export interface ProductDetailsProps {
   productId: number;
   productAttributes: ProductAttributes;
 }
 
-// Para ProductPrimaryInfo.tsx y sus selecciones
+// Props de un componente que solo maneja info primaria (detalle)
 export type ColorOptionData = ColorItem;
 export type PresentationOptionData = PresentationItem;
 
@@ -208,14 +220,13 @@ export interface ProductPrimaryInfoProps {
   descripcion: ProductAttributes["descripcion"];
   colores?: ProductAttributes["colores"];
   presentaciones?: ProductAttributes["presentacion"];
-
   selectedPresentation: string | null;
   onPresentationSelect: (presentation: string) => void;
   selectedColor: ColorOptionData | null;
   onColorSelect: (color: ColorOptionData) => void;
 }
 
-// Para ProductTechnicalSpecs.tsx
+// Props para especificaciones técnicas del detalle
 export interface ProductTechnicalSpecsProps {
   tipoPintura?: ProductAttributes["tipoPintura"];
   brillo?: ProductAttributes["brillo"];
@@ -225,40 +236,79 @@ export interface ProductTechnicalSpecsProps {
   norma?: ProductAttributes["norma"];
 }
 
-// Para ProductAdvantages.tsx
+// Props para mostrar ventajas en detalle
 export interface ProductAdvantagesProps {
   ventajas?: ProductAttributes["ventajas"];
 }
 
-// Para ProductActions.tsx
+// Props para acciones en detalle (por ejemplo, botón de descarga de ficha técnica)
 export interface ProductActionsProps {
   productTitle: string;
-  // productSlug: string; // Si lo necesitas para algo
   selectedPresentation: string | null;
-  selectedColorName: string | null; // Solo el nombre del color
+  selectedColorName: string | null;
   fichaTecnicaUrl?: string | null;
 }
 
-// --- Tipos para la Página de Listado de Productos (nuestros-productos/page.tsx) ---
-// (Estos ya los tenías, pero los incluyo por completitud si este es tu archivo principal de tipos)
+// ------------------------------------------------------------
+// --- Props de listado de productos (nuestros-productos/page.tsx) ---
+// ------------------------------------------------------------
 
 export interface FilterOption {
-  // Para las opciones del SidebarFilters
   label: string;
   value: string;
 }
 
 export interface FilterGroup {
-  // Para los grupos en SidebarFilters
   title: string;
   name: string;
   options: FilterOption[];
 }
 
-// Para la respuesta de la API cuando se obtienen múltiples productos (ej: para ProductGrid o Carousels)
-export interface StrapiProductsResponse {
-  data: Product[]; // Array de productos (usando el tipo Product simplificado)
-  meta: {
-    pagination: StrapiPagination;
-  };
+export interface FilterSourceConfig {
+  uiTitle: string;
+  queryParamName: string;
+  apiEndpoint: string;
+  relationFieldInProduct: string;
 }
+
+export interface GetProductsParams {
+  page?: number;
+  pageSize?: number;
+}
+
+// ------------------------------------------------------------
+// --- Aliases para evitar confusiones ---
+// ------------------------------------------------------------
+
+/**
+ * @description
+ * Cuando estemos en un listado o carrusel (ProductGrid, ProductCarousel, etc.),
+ * usaremos **ListingProduct** para referirnos al producto “liviano” (ProductForListing).
+ */
+export type ListingProduct = ProductForListing;
+
+/**
+ * @description
+ * Para que tus páginas o componentes puedan importar simplemente “Product”
+ * (por ejemplo, en FavoritosPage), añadimos este alias:
+ *
+ *   import { Product, StrapiPagination } from "@/app/types/productPage";
+ *
+ * De este modo, “Product” equivale a “ProductForListing”.
+ */
+export type Product = ProductForListing;
+
+/**
+ * @description
+ * En la página de favoritos u otros listados “genéricos”, importarás Product[]:
+ *
+ *   import { Product, StrapiPagination } from "@/app/types/productPage";
+ *
+ * El componente <ProductGrid> espera un arreglo de “Product” (alias para ProductForListing).
+ */
+
+/**
+ * @description
+ * Para la vista de detalle, importarás ProductPageData (o ProductAttributes si solo quieres atributos).
+ */
+export type DetailProduct = ProductPageData;

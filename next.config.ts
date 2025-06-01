@@ -14,6 +14,12 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "placehold.co",
+        port: "",
+        pathname: "/**", // Permite cualquier ruta dentro de este hostname
+      },
+      {
+        protocol: "https",
         hostname: "servidor-tricolor-64a23aa2b643.herokuapp.com",
         port: "",
         pathname: "/**",

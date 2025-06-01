@@ -1,3 +1,9 @@
+// /app/types.ts
+
+// -----------------------------------------
+// Tipos auxiliares para manejar imágenes desde Strapi
+// -----------------------------------------
+
 export interface StrapiImageFormat {
   ext: string;
   url: string;
@@ -40,6 +46,14 @@ export interface StrapiImageData {
   attributes: StrapiImageDataAttributes;
 }
 
+export interface StrapiImage {
+  data: StrapiImageData | null;
+}
+
+// -----------------------------------------
+// Tipos de rich text (si los necesitas en otros lados)
+// -----------------------------------------
+
 export interface StrapiRichTextParagraphNode {
   text: string;
   type: "text";
@@ -68,12 +82,17 @@ export interface StrapiRichTextParagraph {
 
 export type StrapiRichTextBlock =
   | StrapiRichTextParagraph
-  | StrapiRichTextListNode /* | ... otros tipos de bloques si los usas */;
+  | StrapiRichTextListNode;
+// Agrega más tipos si Strapi te devuelve otros bloques
+
+// -----------------------------------------
+// Atributos de un producto en la respuesta cruda de Strapi
+// -----------------------------------------
 
 export interface ProductAttributes {
   titulo: string;
   slug: string;
-  descripcion: StrapiRichTextBlock[];
+  descripcion?: StrapiRichTextBlock[];
   tipoPintura?: string;
   brillo?: string;
   usoRecomendado?: string;
@@ -81,10 +100,9 @@ export interface ProductAttributes {
   createdAt: string;
   updatedAt: string;
   publishedAt: string;
-  imagen: {
-    data: StrapiImageData | null;
-  };
-  // ... otros campos que puedas necesitar
+  imagen: StrapiImage;
+  // Otros campos que sí uses en “nuestros-productos” (colores, acabados, etc.)
+  [key: string]: any;
 }
 
 export interface Product {
@@ -104,4 +122,21 @@ export interface StrapiProductsResponse {
   meta: {
     pagination: StrapiPagination;
   };
+}
+
+// -----------------------------------------
+// Tipo “plano” que consumirá ProductCarousel
+// -----------------------------------------
+
+export interface FeaturedProduct {
+  /** ID del producto en Strapi */
+  id: number;
+  /** Título/corto nombre del producto */
+  titulo: string;
+  /** Slug para enlazar a detalle (si usas) */
+  slug: string;
+  /** Siempre true (filtrado en Strapi) */
+  destacado: boolean;
+  /** URL absoluta de la imagen (thumbnail si existe, sino la original) */
+  imagenUrl: string;
 }

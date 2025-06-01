@@ -1,4 +1,4 @@
-//app/noticias/[slug].page.tsx
+// app/noticias/[slug].page.tsx
 "use client";
 
 import Image from "next/image";
@@ -6,6 +6,12 @@ import NoticiasCarousel from "@/components/news/Noticias";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
+
+import {
+  Noticia,
+  StrapiNoticiasResponse,
+  StrapiRichTextParagraph,
+} from "@/app/types/noticias";
 
 const API_URL =
   "https://servidor-tricolor-64a23aa2b643.herokuapp.com/api/noticias-americas?populate=*";
@@ -22,28 +28,35 @@ const fadeUp = {
 
 export default function NoticiaIndividual() {
   const params = useParams();
-  const [noticia, setNoticia] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // 1. Tipamos el estado: Noticia | null
+  const [noticia, setNoticia] = useState<Noticia | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchNoticia = async () => {
       try {
         const res = await fetch(API_URL);
-        const data = await res.json();
-        const found = data.data.find((item) => {
+        // 2. Indicamos a TS que 'data' tiene la forma de StrapiNoticiasResponse
+        const data: StrapiNoticiasResponse = await res.json();
+
+        // 3. Ahora TS sabe que data.data es Noticia[]
+        const found = data.data.find((item: Noticia) => {
           const slug = item.attributes.slug;
           if (slug) {
             return slug === params.slug;
           }
           return String(item.id) === String(params.slug);
         });
-        setNoticia(found);
+
+        setNoticia(found || null);
       } catch (error) {
         console.error("Error al cargar la noticia:", error);
+        setNoticia(null);
       } finally {
         setLoading(false);
       }
     };
+
     if (params?.slug) {
       fetchNoticia();
     }
@@ -61,21 +74,31 @@ export default function NoticiaIndividual() {
     );
   }
 
+  // 4. TS ya sabe que 'noticia' es Noticia
   const attrs = noticia.attributes;
+
+  // 5. imgData siempre será NoticiaAttributes["imagenes"]?.data o bien undefined/[]
   const imagenes = attrs.imagenes?.data || [];
-  const imagen1 = imagenes[0]?.attributes?.url || "/noticia-placeholder.png";
+
+  const imagen1 =
+    imagenes[0]?.attributes?.formats?.small?.url ||
+    imagenes[0]?.attributes?.url ||
+    "/noticia-placeholder.png";
+
   const imagen2 =
+    imagenes[1]?.attributes?.formats?.small?.url ||
     imagenes[1]?.attributes?.url ||
     imagenes[0]?.attributes?.url ||
     "/noticia-placeholder.png";
 
-  // Helper para renderizar parrafos tipo Strapi
-  const renderParrafos = (parrafos) =>
-    (parrafos || []).map((item, idx) => (
+  // 6. Firmamos renderParrafos para que reciba StrapiRichTextParagraph[] | undefined | null
+  const renderParrafos = (parrafos?: StrapiRichTextParagraph[] | null) => {
+    return (parrafos || []).map((item, idx) => (
       <p key={idx} className="mb-4">
         {item.children?.[0]?.text || ""}
       </p>
     ));
+  };
 
   return (
     <main className="max-w-6xl mx-auto py-10 space-y-14 font-archivo">
@@ -112,7 +135,7 @@ export default function NoticiaIndividual() {
         </div>
       </motion.section>
 
-      {/* Bloque 2: Texto completo */}
+      {/* Bloque 2: Párrafos adjuntos (parrafo2) */}
       <motion.section
         className="text-gray-800 text-[16px] leading-relaxed text-justify space-y-4"
         variants={fadeUp}
@@ -123,7 +146,7 @@ export default function NoticiaIndividual() {
         {renderParrafos(attrs.parrafo2)}
       </motion.section>
 
-      {/* Bloque 3: Texto izquierda, imagen derecha */}
+      {/* Bloque 3: Texto izquierda (parrafo3), imagen derecha */}
       <motion.section
         className="grid md:grid-cols-2 gap-6 items-stretch"
         variants={fadeUp}

@@ -1,5 +1,6 @@
 // app/nuestros-productos/[slug]/page.tsx
 // @ts-nocheck
+
 import Link from "next/link";
 import ProductDetailHeader from "./components/ProductDetailHeader"; // Verifica la ruta
 import ProductDetails from "./components/ProductDetails"; // Verifica la ruta
@@ -17,7 +18,7 @@ const API_URL = "https://servidor-tricolor-64a23aa2b643.herokuapp.com/api";
 const PRODUCTS_ENDPOINT = `${API_URL}/productos-americas`;
 
 async function getProductBySlug(slug: string): Promise<ProductPageData | null> {
-  // **Corregimos el nombre de ficha técnica** a “ficha_Tecnica” (tal cual aparece en la API)
+  // **Corregimos el nombre de ficha técnica a “ficha_Tecnica” (tal cual aparece en la API)
   const populateQuery = [
     "populate[lineas_america][populate][Imagen]=*",
     "populate[lineas_america][populate][productos_americas][populate][imagen]=*",
@@ -72,11 +73,17 @@ async function getFeaturedProducts(): Promise<Product[]> {
   }
 }
 
-export default async function ProductDetailPage({
-  params,
-}: {
-  params: { slug: string };
-}) {
+// Next.js 15 genera un tipo para PageProps en .next/types/app/…/page.d.ts
+// que espera: { params: Promise<{ slug: string }> }
+// Por eso definimos aquí el mismo shape:
+type PageProps = {
+  params: Promise<{
+    slug: string;
+  }>;
+};
+
+export default async function ProductDetailPage({ params }: PageProps) {
+  // Como params viene envuelto en Promise, hacemos await:
   const { slug } = await params;
 
   const [productData, featuredProducts] = await Promise.all([
@@ -91,7 +98,8 @@ export default async function ProductDetailPage({
           Producto no encontrado
         </h1>
         <p className="mt-2 text-zinc-600">
-          El producto que buscas ({slug}) no pudo ser cargado o no existe.
+          El producto que buscas (<strong>{slug}</strong>) no pudo ser cargado o
+          no existe.
         </p>
         <Link
           href="/nuestros-productos"
@@ -147,14 +155,8 @@ export default async function ProductDetailPage({
         />
       )}
 
-      <div className="bg-white py-12">
+      <div className="bg-zinc-50 py-12">
         <div className="container mx-auto px-4">
-          <h2 className="mb-8 text-center text-3xl font-bold uppercase sm:text-4xl">
-            <span className="text-blue-700">PRODUCTOS</span>
-            <span className="ml-2 inline-block rounded-md bg-red-600 px-3 py-1 text-white">
-              DESTACADOS
-            </span>
-          </h2>
           {featuredProducts.length > 0 ? (
             <ProductCarousel products={featuredProducts} />
           ) : (
@@ -168,11 +170,8 @@ export default async function ProductDetailPage({
   );
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { slug: string };
-}) {
+export async function generateMetadata({ params }: PageProps) {
+  // También aquí params es Promise<{ slug: string }>
   const { slug } = await params;
   const product = await getProductBySlug(slug);
 

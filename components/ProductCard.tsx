@@ -1,48 +1,82 @@
+// components/ProductCard.tsx
 "use client";
 
 import Image from "next/image";
-import { Separator } from "./ui/separator"; // Asumiendo que este path es correcto
+import Link from "next/link";
+import { Separator } from "@/components/ui/separator"; // Ajusta la ruta si tu 'ui' está en otro lugar
+import { Product } from "@/app/types";
 
 interface ProductCardProps {
-  title?: string; // Hacemos title opcional para manejar casos donde pueda faltar
-  imageUrl?: string; // Opcional: Si quieres hacer la imagen dinámica en el futuro
+  product: Product | null | undefined;
 }
 
-const ProductCard = ({ title, imageUrl }: ProductCardProps) => {
-  // Proporciona un texto alternativo de respaldo si el título no está disponible o está vacío.
-  const altText =
-    title && typeof title === "string" && title.trim() !== ""
-      ? title.trim()
-      : "Imagen de producto destacado";
+const ProductCard = ({ product }: ProductCardProps) => {
+  if (!product || !product.attributes) {
+    return (
+      <div className="flex h-[240px] w-full flex-col items-center justify-center rounded-2xl border bg-white p-4 text-center shadow-md md:w-[180px]">
+        <p className="text-xs text-red-500">Producto no disponible</p>
+      </div>
+    );
+  }
 
-  // Proporciona un título visible de respaldo.
-  const displayTitle =
-    title && typeof title === "string" && title.trim() !== ""
-      ? title.trim()
-      : "Producto Destacado";
+  const { titulo, slug, imagen } = product.attributes;
 
-  // Usa la imageUrl proporcionada, o la imagen estática como fallback.
-  const imageSource = imageUrl || "/Acrylatex.png";
+  const imageUrl =
+    imagen?.data?.attributes?.formats?.small?.url || // Priorizar 'small' para tarjetas
+    imagen?.data?.attributes?.formats?.thumbnail?.url ||
+    imagen?.data?.attributes?.url ||
+    `https://placehold.co/180x180/E2E8F0/AAAAAA?text=${encodeURIComponent(
+      titulo || "Imagen"
+    )}`; // Ajustado placeholder
+
+  const imageAltText =
+    imagen?.data?.attributes?.alternativeText || titulo || "Imagen de producto";
+
+  const productSlugOrId =
+    slug || (product.id ? product.id.toString() : "detalle");
+  const productUrl = `/nuestros-productos/${productSlugOrId}`;
 
   return (
-    <div className="border hover:border-blue-800 rounded-2xl shadow-md p-4 w-full md:w-[180px] h-[240px] flex flex-col items-center justify-between bg-white">
-      {/* Contenedor de imagen con tamaño fijo */}
-      <div className="h-full w-full flex items-center justify-center overflow-hidden mb-2">
-        <Image
-          src={imageSource} // Ahora puede ser dinámico o estático
-          alt={altText} // altText siempre será una cadena válida
-          width={613} // Tamaño intrínseco de tu imagen de fallback o un tamaño representativo
-          height={577} // Tamaño intrínseco de tu imagen de fallback
-          className="object-contain max-h-full w-auto" // w-auto para mantener aspect ratio con max-h-full
-          priority={false} // Considera `true` para imágenes LCP, pero usualmente no en carruseles
-        />
+    <Link
+      href={productUrl}
+      className="block h-full text-decoration-none"
+      prefetch={false}
+    >
+      <div className="flex h-[240px] w-full flex-col items-center justify-between rounded-2xl border bg-white p-3 shadow-sm transition-all duration-200 ease-in-out hover:border-blue-600 hover:shadow-lg md:w-[180px]">
+        {/* Contenedor de imagen: aumentado a h-2/3 o h-4/6 */}
+        <div className="mb-2 flex h-[60%] w-full items-center justify-center overflow-hidden pt-1 sm:h-[65%]">
+          {" "}
+          {/* Usando porcentaje para más control */}
+          <Image
+            src={imageUrl}
+            alt={imageAltText}
+            // Estas dimensiones son para el aspect ratio y reserva de espacio.
+            // La imagen se escalará con object-contain dentro del div padre.
+            width={160}
+            height={140}
+            className="max-h-full max-w-full object-contain"
+            onError={(e) => {
+              const target = e.target as HTMLImageElement;
+              const placeholderUrl = `https://placehold.co/160x140/E2E8F0/AAAAAA?text=${encodeURIComponent(
+                titulo || "Error"
+              )}`;
+              if (target.src !== placeholderUrl) {
+                target.srcset = placeholderUrl;
+                target.src = placeholderUrl;
+              }
+            }}
+          />
+        </div>
+
+        <Separator className="my-1 w-full bg-zinc-200 md:my-2" />
+
+        {/* Título del producto: ajustado para el nuevo espacio */}
+        <h3 className="line-clamp-2 h-[3em] px-1 text-center text-xs font-semibold leading-tight text-blue-900 sm:text-sm">
+          {/* Reducido line-clamp y altura fija para el título si la imagen es más grande */}
+          {titulo || "Nombre no disponible"}
+        </h3>
       </div>
-      <Separator />
-      {/* Título */}
-      <h3 className="text-center text-sm font-bold text-blue-900 leading-tight">
-        {displayTitle}
-      </h3>
-    </div>
+    </Link>
   );
 };
 
