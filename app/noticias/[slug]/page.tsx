@@ -1,238 +1,156 @@
-// app/noticias/[slug]/page.tsx
+//app/noticias/[slug].page.tsx
 "use client";
 
 import Image from "next/image";
-import NoticiasCarousel from "@/components/news/Noticias"; // Asumiendo que este es para noticias relacionadas
+import NoticiasCarousel from "@/components/news/Noticias";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { motion } from "framer-motion";
-import {
-  Noticia,
-  StrapiNoticiasResponse,
-  StrapiRichTextParagraph,
-} from "@/app/types/noticias"; // Importar tipos
 
-// Usar variable de entorno para la URL base de la API
-const STRAPI_BASE_URL =
-  process.env.NEXT_PUBLIC_STRAPI_API_URL ||
-  "https://servidor-tricolor-64a23aa2b643.herokuapp.com/api";
-const NOTICIAS_ENDPOINT = `${STRAPI_BASE_URL}/noticias-americas`;
+const API_URL =
+  "https://servidor-tricolor-64a23aa2b643.herokuapp.com/api/noticias-americas?populate=*";
 
 // Variantes para animación de entrada
-const fadeUpVariants = {
-  hidden: { opacity: 0, y: 30 }, // Reducido y para mejor visibilidad inicial
+const fadeUp = {
+  hidden: { opacity: 0, y: 50 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.7, ease: "easeOut" },
+    transition: { duration: 0.8, ease: "easeOut" },
   },
 };
 
-// Helper para renderizar párrafos de Rich Text de Strapi
-const RenderStrapiParagraphs = ({
-  parrafos,
-}: {
-  parrafos?: StrapiRichTextParagraph[] | null;
-}) => {
-  if (!parrafos || parrafos.length === 0) {
-    return null; // No renderizar nada si no hay párrafos
-  }
-  return (
-    <>
-      {parrafos.map((parrafoItem, idx) => (
-        // Asumiendo que cada 'parrafoItem' es un objeto con { type: 'paragraph', children: [{ type: 'text', text: '...' }] }
-        // y que no hay otros tipos de nodos dentro de children por ahora.
-        <p key={idx} className="mb-4 last:mb-0">
-          {parrafoItem.children?.map((child) => child.text).join("") || ""}
-        </p>
-      ))}
-    </>
-  );
-};
-
-export default function NoticiaIndividualPage() {
+export default function NoticiaIndividual() {
   const params = useParams();
-  const slug = params?.slug as string | undefined; // Obtener slug y tiparlo
-
-  const [noticia, setNoticia] = useState<Noticia | null>(null);
+  const [noticia, setNoticia] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!slug) {
-      setLoading(false);
-      setError("Slug de noticia no encontrado en la URL.");
-      return;
-    }
-
-    const fetchNoticiaBySlug = async () => {
-      setLoading(true);
-      setError(null);
-      // Construir URL para obtener la noticia específica por slug, poblando todas las relaciones necesarias
-      const queryParams = new URLSearchParams({
-        "filters[slug][$eq]": slug,
-        "populate[imagenes]": "*", // Poblar el campo de media 'imagenes'
-        // Añade aquí otros campos de relación que necesites poblar para la noticia
-        // "populate[otraRelacion]": "*",
-      });
-      const fullUrl = `${NOTICIAS_ENDPOINT}?${queryParams.toString()}`;
-      // console.log("Fetching noticia from:", fullUrl); // Para depuración
-
+    const fetchNoticia = async () => {
       try {
-        const res = await fetch(fullUrl);
-        if (!res.ok) {
-          throw new Error(
-            `Error al cargar la noticia: ${res.status} ${res.statusText}`
-          );
-        }
-        const data: StrapiNoticiasResponse = await res.json();
-
-        if (data.data && data.data.length > 0) {
-          setNoticia(data.data[0]); // Strapi devuelve un array incluso filtrando por campo único
-        } else {
-          setError("Noticia no encontrada.");
-          setNoticia(null);
-        }
-      } catch (err) {
-        console.error("Error detallado al cargar la noticia:", err);
-        setError(
-          err instanceof Error ? err.message : "Ocurrió un error desconocido."
-        );
-        setNoticia(null);
+        const res = await fetch(API_URL);
+        const data = await res.json();
+        const found = data.data.find((item) => {
+          const slug = item.attributes.slug;
+          if (slug) {
+            return slug === params.slug;
+          }
+          return String(item.id) === String(params.slug);
+        });
+        setNoticia(found);
+      } catch (error) {
+        console.error("Error al cargar la noticia:", error);
       } finally {
         setLoading(false);
       }
     };
-
-    fetchNoticiaBySlug();
-  }, [slug]); // Dependencia del efecto es el slug
+    if (params?.slug) {
+      fetchNoticia();
+    }
+  }, [params?.slug]);
 
   if (loading) {
-    return (
-      <div className="py-20 text-center text-lg font-semibold text-zinc-600">
-        Cargando noticia...
-      </div>
-    );
+    return <div className="text-center py-10">Cargando noticia...</div>;
   }
 
-  if (error || !noticia) {
+  if (!noticia) {
     return (
-      <div className="py-20 text-center">
-        <p className="text-xl font-semibold text-red-600">
-          {error || "Noticia no encontrada."}
-        </p>
-        {/* Podrías añadir un enlace para volver a la lista de noticias */}
+      <div className="text-center py-10 text-red-500">
+        Noticia no encontrada.
       </div>
     );
   }
 
   const attrs = noticia.attributes;
-  const imagenes = attrs.imagenes?.data || []; // Array de objetos de imagen
+  const imagenes = attrs.imagenes?.data || [];
+  const imagen1 = imagenes[0]?.attributes?.url || "/noticia-placeholder.png";
+  const imagen2 =
+    imagenes[1]?.attributes?.url ||
+    imagenes[0]?.attributes?.url ||
+    "/noticia-placeholder.png";
 
-  // Obtener URLs de imagen con fallbacks más robustos
-  const getImageUrl = (index: number, fallbackIndex?: number): string => {
-    const primaryUrl = imagenes[index]?.attributes?.url;
-    if (primaryUrl) return primaryUrl;
-    if (fallbackIndex !== undefined) {
-      const fallbackUrl = imagenes[fallbackIndex]?.attributes?.url;
-      if (fallbackUrl) return fallbackUrl;
-    }
-    return "/noticia-placeholder.png"; // Placeholder genérico
-  };
-
-  const imagen1Url = getImageUrl(0);
-  const imagen2Url = getImageUrl(1, 0); // Si no hay imagen2, usa imagen1 (o placeholder si ninguna existe)
-
-  const imageAltText = attrs.Titulo || "Imagen de la noticia";
+  // Helper para renderizar parrafos tipo Strapi
+  const renderParrafos = (parrafos) =>
+    (parrafos || []).map((item, idx) => (
+      <p key={idx} className="mb-4">
+        {item.children?.[0]?.text || ""}
+      </p>
+    ));
 
   return (
-    <main className="mx-auto max-w-5xl space-y-12 px-4 py-10 font-archivo md:space-y-16 lg:py-16">
+    <main className="max-w-6xl mx-auto py-10 space-y-14 font-archivo">
+      {/* Título de la noticia */}
       <motion.h1
-        className="mb-10 text-center text-3xl font-extrabold leading-tight text-blue-800 md:text-4xl lg:text-5xl"
-        variants={fadeUpVariants}
+        className="text-center text-blue-900 font-extrabold text-3xl md:text-4xl lg:text-5xl leading-tight mb-8"
+        variants={fadeUp}
         initial="hidden"
-        animate="visible" // Animar al cargar la página
-        // whileInView y viewport son más para animaciones al hacer scroll
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.7 }}
       >
         {attrs.Titulo}
       </motion.h1>
 
+      {/* Bloque 1: Imagen izquierda, texto derecha */}
       <motion.section
-        className="grid items-stretch gap-6 md:grid-cols-2 md:gap-8"
-        variants={fadeUpVariants}
+        className="grid md:grid-cols-2 gap-6 items-stretch"
+        variants={fadeUp}
         initial="hidden"
-        whileInView="visible" // Animar cuando la sección entra en la vista
-        viewport={{ once: true, amount: 0.1 }} // amount: 0.1 para que se active antes
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
       >
-        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl shadow-lg md:aspect-auto">
-          {" "}
-          {/* Aspect ratio para la imagen */}
+        <div>
           <Image
-            src={imagen1Url}
-            alt={imageAltText}
-            fill // Usar fill para que la imagen cubra el contenedor
-            className="object-cover" // object-cover para llenar y recortar si es necesario
-            sizes="(max-width: 768px) 100vw, 50vw"
-            priority // Considerar priority para la primera imagen grande
+            src={imagen1}
+            alt={attrs.Titulo}
+            width={500}
+            height={350}
+            className="rounded-2xl w-full h-96 object-cover"
           />
         </div>
-        <div className="flex items-center text-justify text-base leading-relaxed text-gray-700 md:text-lg">
-          <div>
-            <RenderStrapiParagraphs parrafos={attrs.parrafo1} />
-          </div>
+        <div className="text-gray-800 text-[16px] leading-relaxed text-justify pr-2 flex items-center">
+          <div>{renderParrafos(attrs.parrafo1)}</div>
         </div>
       </motion.section>
 
-      {attrs.parrafo2 && attrs.parrafo2.length > 0 && (
-        <motion.section
-          className="space-y-4 text-justify text-base leading-relaxed text-gray-700 md:text-lg"
-          variants={fadeUpVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.1 }}
-        >
-          <RenderStrapiParagraphs parrafos={attrs.parrafo2} />
-        </motion.section>
-      )}
-
-      {attrs.parrafo3 && attrs.parrafo3.length > 0 && (
-        <motion.section
-          className="grid items-stretch gap-6 md:grid-cols-2 md:gap-8"
-          variants={fadeUpVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, amount: 0.1 }}
-        >
-          <div className="order-2 flex items-center text-justify text-base leading-relaxed text-gray-700 md:order-1 md:text-lg">
-            <div>
-              <RenderStrapiParagraphs parrafos={attrs.parrafo3} />
-            </div>
-          </div>
-          <div className="relative order-1 aspect-[4/3] w-full overflow-hidden rounded-xl shadow-lg md:order-2 md:aspect-auto">
-            <Image
-              src={imagen2Url}
-              alt={imageAltText} // Usar el mismo alt o uno específico si es diferente
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, 50vw"
-            />
-          </div>
-        </motion.section>
-      )}
-
-      {/* Carrusel de otras noticias (NoticiasCarousel) */}
-      {/* Este componente debería ser también un Client Component si usa react-slick */}
-      {/* y debería obtener sus propios datos o recibirlos como props. */}
-      <motion.div
-        className="pt-8" // Añadido padding superior
-        variants={fadeUpVariants}
+      {/* Bloque 2: Texto completo */}
+      <motion.section
+        className="text-gray-800 text-[16px] leading-relaxed text-justify space-y-4"
+        variants={fadeUp}
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, amount: 0.1 }}
+        viewport={{ once: true, amount: 0.2 }}
       >
-        <h2 className="mb-8 text-center text-2xl font-bold text-blue-800 md:text-3xl">
-          Otras Noticias
-        </h2>
+        {renderParrafos(attrs.parrafo2)}
+      </motion.section>
+
+      {/* Bloque 3: Texto izquierda, imagen derecha */}
+      <motion.section
+        className="grid md:grid-cols-2 gap-6 items-stretch"
+        variants={fadeUp}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+      >
+        <div className="text-gray-800 text-[16px] leading-relaxed text-justify pr-2 order-2 md:order-1 flex items-center">
+          <div>{renderParrafos(attrs.parrafo3)}</div>
+        </div>
+        <div className="order-1 md:order-2">
+          <Image
+            src={imagen2}
+            alt={attrs.Titulo}
+            width={600}
+            height={400}
+            className="rounded-2xl w-full h-96 object-cover"
+          />
+        </div>
+      </motion.section>
+
+      <motion.div
+        variants={fadeUp}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{ once: true, amount: 0.2 }}
+      >
         <NoticiasCarousel />
       </motion.div>
     </main>

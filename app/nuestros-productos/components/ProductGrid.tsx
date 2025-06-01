@@ -73,17 +73,15 @@ const ProductGrid = ({
         ) : (
           // Este mensaje podría aparecer si initialProducts está vacío pero totalProducts es 0
           // (por ejemplo, si los filtros no devuelven nada).
-          <p>No hay productos que coincidan con tu búsqueda o filtros.</p>
+          (<p>No hay productos que coincidan con tu búsqueda o filtros.</p>)
         )}
       </div>
-
       {/* Cuadrícula de productos */}
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {initialProducts.map((product) => (
           <ProductCard key={product.id} product={product} />
         ))}
       </div>
-
       {/* Controles de Paginación */}
       {pageCount > 1 && (
         <div className="mt-10 flex items-center justify-center space-x-3 sm:space-x-4">

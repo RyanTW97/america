@@ -34,7 +34,6 @@ export const NavbarMenu = () => {
           />
         </Link>
       </li>
-
       {/* QUIENES SOMOS */}
       <li className="relative">
         <div
@@ -96,7 +95,6 @@ export const NavbarMenu = () => {
           </Popover>
         </div>
       </li>
-
       {/* NUESTROS PRODUCTOS */}
       <li className="relative">
         <div
@@ -150,7 +148,6 @@ export const NavbarMenu = () => {
           </Popover>
         </div>
       </li>
-
       {/* CENTRO DE CAPACITACIÓN */}
       <li className="relative">
         <div
@@ -176,7 +173,6 @@ export const NavbarMenu = () => {
           </Link>
         </div>
       </li>
-
       {/* CONTACTÁCTANOS */}
       <li>
         <Link href="/contactanos" className={baseLink}>

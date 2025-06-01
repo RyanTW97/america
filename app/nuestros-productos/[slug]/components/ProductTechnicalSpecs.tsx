@@ -55,13 +55,13 @@ const SpecItem: React.FC<SpecItemProps> = ({
       >
         {isReactIcon ? (
           // Los íconos de react-icons se controlan mejor con 'size' o font-size via className
-          <IconComponent className={`${iconSizeClass} text-black`} />
+          (<IconComponent className={`${iconSizeClass} text-black`} />)
         ) : (
           // Los íconos de Lucide aceptan strokeWidth
-          <IconComponent
+          (<IconComponent
             className={`${iconSizeClass} text-black`}
             strokeWidth={1.5}
-          />
+          />)
         )}
       </div>
       {/* Contenido de Texto */}

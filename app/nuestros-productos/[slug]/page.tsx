@@ -1,256 +1,88 @@
 // app/nuestros-productos/[slug]/page.tsx
 // @ts-nocheck
 import Link from "next/link";
-import ProductDetailHeader from "./components/ProductDetailHeader";
-import ProductDetails from "./components/ProductDetails";
-import RelatedProductsByLine from "./components/RelatedProductsByLine";
-import ProductCarousel from "@/components/ProductCarousel";
+import ProductDetailHeader from "./components/ProductDetailHeader"; // Verifica la ruta
+import ProductDetails from "./components/ProductDetails"; // Verifica la ruta
+import RelatedProductsByLine from "./components/RelatedProductsByLine"; // Verifica la ruta
+import ProductCarousel from "@/components/ProductCarousel"; // Verifica la ruta
 
 import {
   ProductPageData,
   StrapiSingleProductResponse,
   Product,
   StrapiProductsResponse,
-} from "@/app/types/productPage"; // Asegúrate que estas importaciones sean correctas
-// import { LineasAmerica } from "@/app/types"; // No se usa directamente
+} from "@/app/types/productPage"; // Verifica la ruta
 
-// Importaciones faltantes (basadas en el código anterior)
-import { FilterGroup, FilterOption } from "./../components/SidebarFilters"; // Ajusta la ruta si es necesario
-import { StrapiPagination } from "@/app/types"; // Si StrapiFilterCollectionResponse la necesita
-
-// --- CONSTANTES ---
-// FIJAMOS LA URL BASE DE LA API DIRECTAMENTE PARA DEPURACIÓN
 const API_URL = "https://servidor-tricolor-64a23aa2b643.herokuapp.com/api";
-
-const PRODUCTS_ENDPOINT = `${API_URL}/productos-americas`; // API_URL ya incluye /api
-// const DEFAULT_PAGE_SIZE = 8; // No se usa en este archivo directamente
-// const QUICK_FILTER_PARAM_NAME = "quick_filter_mode"; // No se usa en este archivo directamente
-// const SEARCH_QUERY_PARAM_NAME = "q"; // No se usa en este archivo directamente
-
-// --- INTERFACES ADICIONALES (si no están en los types importados) ---
-interface StrapiFilterOptionData {
-  id: number;
-  attributes: {
-    nombre: string;
-    slug: string;
-  };
-}
-
-interface StrapiFilterCollectionResponse {
-  data: StrapiFilterOptionData[];
-  meta: {
-    // Asumiendo que StrapiPagination está disponible
-    pagination: StrapiPagination;
-  };
-}
-
-interface FilterSourceConfig {
-  uiTitle: string;
-  queryParamName: string;
-  apiEndpoint: string; // Ruta relativa DESPUÉS de API_URL, ej: /lineas-americas
-  relationFieldInProduct: string;
-}
-
-// --- CONFIGURACIÓN DE FILTROS ---
-// Los apiEndpoint aquí son relativos y se añadirán a API_URL.
-// Como API_URL ya tiene /api, estos endpoints no deben empezar con /api.
-const FILTER_SOURCES: FilterSourceConfig[] = [
-  {
-    uiTitle: "Líneas",
-    queryParamName: "lineas",
-    apiEndpoint: "/lineas-americas",
-    relationFieldInProduct: "lineas_america",
-  },
-  {
-    uiTitle: "Acabados",
-    queryParamName: "acabados",
-    apiEndpoint: "/acabados",
-    relationFieldInProduct: "acabados",
-  },
-  {
-    uiTitle: "Ambiente Exterior",
-    queryParamName: "ambiente_exterior",
-    apiEndpoint: "/ambiente-exteriors",
-    relationFieldInProduct: "ambiente_exteriors",
-  },
-  {
-    uiTitle: "Ambiente Interior",
-    queryParamName: "ambiente_interior",
-    apiEndpoint: "/ambiente-interiors",
-    relationFieldInProduct: "ambiente_interiors",
-  },
-  {
-    uiTitle: "Superficies",
-    queryParamName: "superficies",
-    apiEndpoint: "/superficies",
-    relationFieldInProduct: "superficies",
-  },
-  {
-    uiTitle: "Tipo de Producto",
-    queryParamName: "tipo_producto",
-    apiEndpoint: "/tipo-de-productos",
-    relationFieldInProduct: "tipo_de_productos",
-  },
-];
-
-// --- FUNCIONES DE FETCH ---
-
-async function getAvailableFilterOptions(): Promise<FilterGroup[]> {
-  const allFilterGroups: FilterGroup[] = [];
-  for (const source of FILTER_SOURCES) {
-    try {
-      const optionsUrlParams = new URLSearchParams({
-        "pagination[pageSize]": "100",
-        "sort[0]": "nombre:asc",
-        "fields[0]": "nombre",
-        "fields[1]": "slug",
-      });
-      // API_URL ya incluye /api, source.apiEndpoint es la ruta específica de la colección
-      const fullOptionsUrl = `${API_URL}${
-        source.apiEndpoint
-      }?${optionsUrlParams.toString()}`;
-      // console.log(`Fetching filter options for ${source.uiTitle} from ${fullOptionsUrl}`); // Para depuración
-
-      const res = await fetch(fullOptionsUrl, { next: { revalidate: 3600 } });
-      if (!res.ok) {
-        console.error(
-          `Error fetching filter options for ${source.uiTitle} from ${fullOptionsUrl}: ${res.status} ${res.statusText}`
-        );
-        allFilterGroups.push({
-          title: source.uiTitle,
-          name: source.queryParamName,
-          options: [],
-        });
-        continue;
-      }
-      const responseJson: StrapiFilterCollectionResponse = await res.json();
-      const options: FilterOption[] = responseJson.data.map((item) => ({
-        label: item.attributes.nombre,
-        value: item.attributes.slug,
-      }));
-      allFilterGroups.push({
-        title: source.uiTitle,
-        name: source.queryParamName,
-        options,
-      });
-    } catch (error) {
-      console.error(
-        `Exception fetching filter options for ${source.uiTitle}:`,
-        error
-      );
-      allFilterGroups.push({
-        title: source.uiTitle,
-        name: source.queryParamName,
-        options: [],
-      });
-    }
-  }
-  return allFilterGroups;
-}
+const PRODUCTS_ENDPOINT = `${API_URL}/productos-americas`;
 
 async function getProductBySlug(slug: string): Promise<ProductPageData | null> {
-  const populateParams = new URLSearchParams({
-    "populate[lineas_america][populate][Imagen]": "*", // Imagen de la línea
-    "populate[imagen]": "*", // Imagen principal del producto
-    "populate[selloCalidad]": "*",
-    "populate[colores]": "*",
-    "populate[presentacion]": "*",
-    "populate[ventajas]": "*",
-    "populate[ficha_Tecnica]": "*",
-    // Populate para productos relacionados dentro de la misma línea
-    "populate[lineas_america][populate][productos_americas][populate][imagen]":
-      "*", // Imagen de productos relacionados
-    "populate[lineas_america][populate][productos_americas][fields][0]":
-      "titulo",
-    "populate[lineas_america][populate][productos_americas][fields][1]": "slug",
-    "populate[lineas_america][populate][productos_americas][fields][2]":
-      "descripcion",
-  });
-  const filterParams = new URLSearchParams({ "filters[slug][$eq]": slug });
+  // **Corregimos el nombre de ficha técnica** a “ficha_Tecnica” (tal cual aparece en la API)
+  const populateQuery = [
+    "populate[lineas_america][populate][Imagen]=*",
+    "populate[lineas_america][populate][productos_americas][populate][imagen]=*",
+    "populate[imagen]=*",
+    // Aquí corregimos el populate exacto para fichas técnicas:
+    "populate[ficha_Tecnica]=*",
+    // Si quisieras asegurar que Strapi incluya las ventajas (aunque en tu JSON ya vienen):
+    "populate[ventajas]=*",
+    "populate[hoja_seguridad]=*",
+    "populate[usos_recomendados][populate][icono]=*",
+    "populate[beneficios][populate][icono]=*",
+    "populate[colores][populate][imagen_color]=*",
+    "populate[videos_aplicacion][populate][thumbnail_video]=*",
+  ].join("&");
 
-  // PRODUCTS_ENDPOINT ya es la URL completa de la colección de productos
-  const fullUrl = `${PRODUCTS_ENDPOINT}?${filterParams.toString()}&${populateParams.toString()}`;
-  // console.log("Fetching product detail from:", fullUrl); // Para depuración
+  const url = `${PRODUCTS_ENDPOINT}?filters[slug][$eq]=${slug}&${populateQuery}`;
 
   try {
-    const res = await fetch(fullUrl, { next: { revalidate: 60 } });
+    const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) {
-      const errorBody = await res.text();
       console.error(
-        `Error fetching product ${slug} from ${fullUrl}: ${res.status} ${res.statusText}. Body: ${errorBody}`
+        `Error fetching product by slug (${slug}): ${res.status} ${res.statusText}`
       );
       return null;
     }
-    const responseJson: StrapiSingleProductResponse = await res.json();
-
-    // Strapi puede devolver un array de datos o un solo objeto de datos para un filtro de slug.
-    // Normalmente, con un filtro de igualdad de slug, debería ser un array con un elemento o vacío.
-    if (Array.isArray(responseJson.data) && responseJson.data.length > 0) {
-      return responseJson.data[0];
-    }
-    // Caso menos común: si Strapi devuelve un objeto directamente (no un array)
-    if (!Array.isArray(responseJson.data) && responseJson.data) {
-      // Esto es inusual para filtros, pero lo manejamos por si acaso.
-      return responseJson.data as ProductPageData;
-    }
-
-    console.warn(`Product with slug "${slug}" not found or data is empty.`);
-    return null;
+    const jsonResponse: StrapiSingleProductResponse = await res.json();
+    return jsonResponse.data && jsonResponse.data.length > 0
+      ? jsonResponse.data[0]
+      : null;
   } catch (error) {
-    console.error(`Exception fetching product ${slug}:`, error);
+    console.error(`Failed to fetch product with slug "${slug}":`, error);
     return null;
   }
 }
 
 async function getFeaturedProducts(): Promise<Product[]> {
-  const queryParams = new URLSearchParams({
-    "filters[destacado][$eq]": "true",
-    "populate[imagen]": "*",
-    "fields[0]": "titulo",
-    "fields[1]": "slug",
-    "fields[2]": "descripcion",
-    "pagination[limit]": "12",
-    "sort[0]": "updatedAt:desc",
-  });
-  // PRODUCTS_ENDPOINT ya es la URL completa de la colección de productos
-  const fullUrl = `${PRODUCTS_ENDPOINT}?${queryParams.toString()}`;
-  // console.log("Fetching featured products from:", fullUrl); // Para depuración
+  const url = `${PRODUCTS_ENDPOINT}?filters[destacado][$eq]=true&populate[imagen]=*&pagination[limit]=10`;
 
   try {
-    const res = await fetch(fullUrl, { next: { revalidate: 3600 } });
+    const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) {
       console.error(
         `Error fetching featured products: ${res.status} ${res.statusText}`
       );
       return [];
     }
-    const responseJson: StrapiProductsResponse = await res.json();
-    return responseJson.data || [];
+    const jsonResponse: StrapiProductsResponse = await res.json();
+    return jsonResponse.data || [];
   } catch (error) {
-    console.error("Exception fetching featured products:", error);
+    console.error("Failed to fetch featured products:", error);
     return [];
   }
 }
 
-// --- COMPONENTE DE PÁGINA ---
-interface ProductDetailPageProps {
-  params: { slug: string };
-  searchParams?: { [key: string]: string | string[] | undefined }; // Añadido searchParams opcional
-}
-
 export default async function ProductDetailPage({
   params,
-}: ProductDetailPageProps) {
-  const { slug } = params;
+}: {
+  params: { slug: string };
+}) {
+  const { slug } = await params;
 
-  // No es necesario obtener availableFilters aquí si SearchAndTags no se usa en esta página.
-  // Si se usara, entonces sí sería necesario.
-  const [productData, featuredProducts /*, availableFilters */] =
-    await Promise.all([
-      getProductBySlug(slug),
-      getFeaturedProducts(),
-      // getAvailableFilterOptions(), // Descomentar si SearchAndTags se añade a esta página
-    ]);
+  const [productData, featuredProducts] = await Promise.all([
+    getProductBySlug(slug),
+    getFeaturedProducts(),
+  ]);
 
   if (!productData) {
     return (
@@ -271,52 +103,36 @@ export default async function ProductDetailPage({
     );
   }
 
-  const lineaPrincipal = productData.attributes.lineas_america?.data;
-  const lineaAttributes = lineaPrincipal?.attributes;
+  const linea = productData.attributes.lineas_america?.data;
+  const lineaAttr = linea?.attributes;
 
-  const productsInLineaFromStrapi = lineaAttributes?.productos_americas?.data;
-
-  const relatedProductsData: Product[] = productsInLineaFromStrapi
-    ? productsInLineaFromStrapi
-        .filter(
-          (p: any) =>
-            p &&
-            p.attributes &&
-            p.attributes.slug !== productData.attributes.slug
-        ) // Añadir verificación de p y p.attributes
-        .map((p: any) => ({
-          id: p.id,
-          attributes: {
-            titulo: p.attributes.titulo,
-            slug: p.attributes.slug,
-            imagen: p.attributes.imagen, // Asegúrate que esto sea la estructura que ProductCard espera
-            // o mapea a product.attributes.imagen.data.attributes.url si es necesario
-            descripcion: p.attributes.descripcion,
-            // ... otros campos que ProductCard/ProductCarousel puedan necesitar
-          },
-        }))
-    : [];
-  const limitedRelatedProducts = relatedProductsData.slice(0, 10);
-
-  // const sidebarQueryParamNames = FILTER_SOURCES.map(
-  //   (source) => source.queryParamName
-  // ); // No se usa si SearchAndTags no está aquí
+  const related =
+    lineaAttr?.productos_americas?.data
+      ?.filter((p: any) => p?.id !== productData.id)
+      .map((p: any) => ({
+        id: p.id,
+        attributes: {
+          titulo: p.attributes.titulo,
+          slug: p.attributes.slug,
+          imagen: p.attributes.imagen,
+          descripcion: p.attributes.descripcion,
+        },
+      })) || [];
+  const limitedRelated = related.slice(0, 10);
 
   return (
     <main className="min-h-screen bg-zinc-50">
-      {lineaAttributes ? (
+      {lineaAttr ? (
         <ProductDetailHeader
-          lineaTitle={lineaAttributes.nombre}
-          lineaImageUrl={lineaAttributes.Imagen?.data?.attributes.url}
+          lineaTitle={lineaAttr.nombre}
+          lineaImageUrl={lineaAttr.Imagen?.data?.attributes.url}
           lineaImageAlt={
-            lineaAttributes.Imagen?.data?.attributes.alternativeText ||
-            `Imagen de línea ${lineaAttributes.nombre}`
+            lineaAttr.Imagen?.data?.attributes.alternativeText ||
+            `Imagen de línea ${lineaAttr.nombre}`
           }
         />
       ) : (
-        <div className="bg-zinc-200 py-8 text-center text-zinc-500">
-          {/* Podrías mostrar un banner genérico o nada si no hay línea */}
-        </div>
+        <div className="bg-zinc-200 py-8" />
       )}
 
       <ProductDetails
@@ -324,10 +140,10 @@ export default async function ProductDetailPage({
         productAttributes={productData.attributes}
       />
 
-      {lineaAttributes && limitedRelatedProducts.length > 0 && (
+      {lineaAttr && limitedRelated.length > 0 && (
         <RelatedProductsByLine
-          lineaNombre={lineaAttributes.nombre}
-          relatedProducts={limitedRelatedProducts} // Pasa los productos ya mapeados
+          lineaNombre={lineaAttr.nombre}
+          relatedProducts={limitedRelated}
         />
       )}
 
@@ -339,7 +155,7 @@ export default async function ProductDetailPage({
               DESTACADOS
             </span>
           </h2>
-          {featuredProducts && featuredProducts.length > 0 ? (
+          {featuredProducts.length > 0 ? (
             <ProductCarousel products={featuredProducts} />
           ) : (
             <p className="text-center text-zinc-500">
@@ -352,10 +168,15 @@ export default async function ProductDetailPage({
   );
 }
 
-export async function generateMetadata({ params }: ProductDetailPageProps) {
-  const product = await getProductBySlug(params.slug);
-  if (!product || !product.attributes) {
-    // Añadida verificación de product.attributes
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}) {
+  const { slug } = await params;
+  const product = await getProductBySlug(slug);
+
+  if (!product?.attributes) {
     return {
       title: "Producto no encontrado",
       description: "El producto que buscas no está disponible.",
@@ -365,28 +186,47 @@ export async function generateMetadata({ params }: ProductDetailPageProps) {
   let descriptionMeta = `Detalles sobre ${product.attributes.titulo}. Encuentra calidad y rendimiento con los productos de América Pinturas.`;
   const descBlocks = product.attributes.descripcion;
 
-  // Asegurarse de que descBlocks es un array y tiene elementos antes de acceder a descBlocks[0]
   if (
-    Array.isArray(descBlocks) && // Verificar que es un array
+    Array.isArray(descBlocks) &&
     descBlocks.length > 0 &&
-    descBlocks[0] && // Verificar que el primer elemento existe
-    descBlocks[0].type === "paragraph" &&
-    Array.isArray(descBlocks[0].children) && // Verificar que children es un array
+    descBlocks[0]?.type === "paragraph" &&
+    Array.isArray(descBlocks[0].children) &&
     descBlocks[0].children.length > 0
   ) {
-    descriptionMeta = descBlocks[0].children
-      .filter((c: any) => c && c.type === "text" && typeof c.text === "string") // Añadir más verificaciones
+    const text = descBlocks[0].children
+      .filter((c: any) => c?.type === "text" && typeof c.text === "string")
       .map((c: any) => c.text)
       .join(" ")
+      .trim()
       .substring(0, 155);
-    if (!descriptionMeta.trim()) {
-      // Fallback si la descripción procesada está vacía
-      descriptionMeta = `Conoce más sobre ${product.attributes.titulo}, una solución de calidad de América Pinturas.`;
-    }
+    if (text) descriptionMeta = text;
   }
+
+  const mainImage = product.attributes.imagen?.data?.attributes;
 
   return {
     title: `${product.attributes.titulo} | América Pinturas`,
-    description: descriptionMeta.trim(),
+    description: descriptionMeta,
+    openGraph: {
+      title: `${product.attributes.titulo} | América Pinturas`,
+      description: descriptionMeta,
+      images: mainImage?.url
+        ? [
+            {
+              url: mainImage.url,
+              width: mainImage.width || 800,
+              height: mainImage.height || 600,
+              alt: mainImage.alternativeText || product.attributes.titulo,
+            },
+          ]
+        : [],
+      type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${product.attributes.titulo} | América Pinturas`,
+      description: descriptionMeta,
+      images: mainImage?.url ? [mainImage.url] : [],
+    },
   };
 }

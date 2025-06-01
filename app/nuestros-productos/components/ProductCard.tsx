@@ -82,7 +82,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
       >
         <span className="sr-only">Ver detalles de {titulo}</span>
       </Link>
-
       {/* Content wrapper with padding, ensuring it's above the main Link for interaction. */}
       <div className="relative z-10 flex flex-grow flex-col p-4 pb-0">
         {" "}
@@ -147,7 +146,6 @@ const ProductCard = ({ product }: ProductCardProps) => {
           {shortDescription}
         </p>
       </div>
-
       {/* "Ver Producto" Button - Positioned to overlap the bottom border */}
       {/* This div is outside the main content padding flow to allow precise absolute positioning */}
       <div className="relative z-10 mt-auto px-4 pb-4">

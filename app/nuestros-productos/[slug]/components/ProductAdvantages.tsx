@@ -37,7 +37,7 @@ const ProductAdvantages = ({ ventajas }: ProductAdvantagesProps) => {
       <ul className="list-disc space-y-1.5 pl-5 text-sm text-zinc-700 sm:space-y-2 sm:text-base">
         {ventajas.map((item) => (
           // Usar item.id como key, ya que es único para cada ventaja en el array de Strapi.
-          <li key={item.id}>{item.ventaja}</li>
+          (<li key={item.id}>{item.ventaja}</li>)
         ))}
       </ul>
     </div>

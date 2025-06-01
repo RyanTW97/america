@@ -11,16 +11,14 @@ import ProductCarousel from "@/components/ProductCarousel";
 import { Product, StrapiPagination, StrapiProductsResponse } from "@/app/types";
 import { Separator } from "@/components/ui/separator";
 
-// FIJAMOS LA URL BASE DE LA API DIRECTAMENTE PARA DEPURACIÓN
 const API_URL = "https://servidor-tricolor-64a23aa2b643.herokuapp.com";
-
-// AJUSTAMOS EL ENDPOINT DE PRODUCTOS Y OTROS PARÁMETROS CON /api/
 const PRODUCTS_ENDPOINT = `${API_URL}/api/productos-americas`;
 const DEFAULT_PAGE_SIZE = 8;
 const QUICK_FILTER_PARAM_NAME = "quick_filter_mode";
 const SEARCH_QUERY_PARAM_NAME = "q";
 
-// --- INTERFACES ---
+// --- CONFIGURACIÓN DE FILTROS ---
+
 interface StrapiFilterOptionData {
   id: number;
   attributes: {
@@ -39,51 +37,45 @@ interface StrapiFilterCollectionResponse {
 interface FilterSourceConfig {
   uiTitle: string;
   queryParamName: string;
-  apiEndpoint: string; // Esta será la ruta relativa DESPUÉS de API_URL, ej: /api/lineas-americas
+  apiEndpoint: string; // Ruta relativa después de API_URL, ej: /api/lineas-americas
   relationFieldInProduct: string;
 }
 
-interface GetProductsParams {
-  page?: number;
-  pageSize?: number;
-}
-
-// --- CONFIGURACIÓN DE FILTROS CON /api/ ---
 const FILTER_SOURCES: FilterSourceConfig[] = [
   {
     uiTitle: "Líneas",
     queryParamName: "lineas",
-    apiEndpoint: "/api/lineas-americas", // Incluye /api/
+    apiEndpoint: "/api/lineas-americas",
     relationFieldInProduct: "lineas_america",
   },
   {
     uiTitle: "Acabados",
     queryParamName: "acabados",
-    apiEndpoint: "/api/acabados", // Incluye /api/
+    apiEndpoint: "/api/acabados",
     relationFieldInProduct: "acabados",
   },
   {
     uiTitle: "Ambiente Exterior",
     queryParamName: "ambiente_exterior",
-    apiEndpoint: "/api/ambiente-exteriors", // Incluye /api/
+    apiEndpoint: "/api/ambiente-exteriors",
     relationFieldInProduct: "ambiente_exteriors",
   },
   {
     uiTitle: "Ambiente Interior",
     queryParamName: "ambiente_interior",
-    apiEndpoint: "/api/ambiente-interiors", // Incluye /api/
+    apiEndpoint: "/api/ambiente-interiors",
     relationFieldInProduct: "ambiente_interiors",
   },
   {
     uiTitle: "Superficies",
     queryParamName: "superficies",
-    apiEndpoint: "/api/superficies", // Incluye /api/
+    apiEndpoint: "/api/superficies",
     relationFieldInProduct: "superficies",
   },
   {
     uiTitle: "Tipo de Producto",
     queryParamName: "tipo_producto",
-    apiEndpoint: "/api/tipo-de-productos", // Incluye /api/
+    apiEndpoint: "/api/tipo-de-productos",
     relationFieldInProduct: "tipo_de_productos",
   },
 ];
@@ -91,24 +83,20 @@ const FILTER_SOURCES: FilterSourceConfig[] = [
 // --- FUNCIONES DE FETCH ---
 
 async function getAvailableFilterOptions(): Promise<FilterGroup[]> {
-  const fetchOptionPromises = FILTER_SOURCES.map(async (source) => {
-    try {
-      const optionsUrlParams = new URLSearchParams({
-        "pagination[pageSize]": "100",
-        "sort[0]": "nombre:asc",
-        "fields[0]": "nombre",
-        "fields[1]": "slug",
-      });
-      // Construye la URL completa usando API_URL y el apiEndpoint del source
-      const fullOptionsUrl = `${API_URL}${
-        source.apiEndpoint
-      }?${optionsUrlParams.toString()}`;
-      // console.log(`Fetching filter options for ${source.uiTitle} from ${fullOptionsUrl}`); // Log para depuración
+  const promises = FILTER_SOURCES.map(async (source) => {
+    const params = new URLSearchParams({
+      "pagination[pageSize]": "100",
+      "sort[0]": "nombre:asc",
+      "fields[0]": "nombre",
+      "fields[1]": "slug",
+    });
+    const url = `${API_URL}${source.apiEndpoint}?${params.toString()}`;
 
-      const res = await fetch(fullOptionsUrl, { next: { revalidate: 3600 } });
+    try {
+      const res = await fetch(url, { next: { revalidate: 3600 } });
       if (!res.ok) {
         console.error(
-          `Error fetching filter options for ${source.uiTitle} from ${fullOptionsUrl}: ${res.status} ${res.statusText}`
+          `Error ${res.status} al cargar ${source.uiTitle} desde ${url}`
         );
         return {
           success: false,
@@ -117,8 +105,8 @@ async function getAvailableFilterOptions(): Promise<FilterGroup[]> {
           options: [],
         };
       }
-      const responseJson: StrapiFilterCollectionResponse = await res.json();
-      const options: FilterOption[] = responseJson.data.map((item) => ({
+      const json: StrapiFilterCollectionResponse = await res.json();
+      const options: FilterOption[] = json.data.map((item) => ({
         label: item.attributes.nombre,
         value: item.attributes.slug,
       }));
@@ -129,10 +117,7 @@ async function getAvailableFilterOptions(): Promise<FilterGroup[]> {
         options,
       };
     } catch (error) {
-      console.error(
-        `Exception fetching filter options for ${source.uiTitle}:`,
-        error
-      );
+      console.error(`Excepción cargando ${source.uiTitle}:`, error);
       return {
         success: false,
         title: source.uiTitle,
@@ -141,27 +126,22 @@ async function getAvailableFilterOptions(): Promise<FilterGroup[]> {
       };
     }
   });
-  const results = await Promise.allSettled(fetchOptionPromises);
-  const allFilterGroups: FilterGroup[] = results.map((result) => {
+
+  const settled = await Promise.allSettled(promises);
+  return settled.map((result, i) => {
     if (result.status === "fulfilled" && result.value.success) {
       const { title, name, options } = result.value;
       return { title, name, options: options || [] };
     } else {
-      const failedSourceInfo =
-        result.status === "rejected"
-          ? FILTER_SOURCES.find(
-              (s) => s.uiTitle === (result.reason as any)?.title
-            )
-          : (result.value as any);
-
-      return {
-        title: failedSourceInfo?.uiTitle || "Error de Filtro",
-        name: failedSourceInfo?.queryParamName || "error",
-        options: [],
-      };
+      const src = FILTER_SOURCES[i];
+      return { title: src.uiTitle, name: src.queryParamName, options: [] };
     }
   });
-  return allFilterGroups;
+}
+
+interface GetProductsParams {
+  page?: number;
+  pageSize?: number;
 }
 
 async function getProducts(
@@ -169,147 +149,135 @@ async function getProducts(
   activeFilters?: URLSearchParams
 ): Promise<{ products: Product[]; pagination: StrapiPagination | null }> {
   const { page = 1, pageSize = DEFAULT_PAGE_SIZE } = fetchParams;
-  const strapiApiParams = new URLSearchParams({
+  const apiParams = new URLSearchParams({
     populate: "*",
     "pagination[page]": page.toString(),
     "pagination[pageSize]": pageSize.toString(),
     "sort[0]": "titulo:asc",
   });
+
   const searchQuery = activeFilters?.get(SEARCH_QUERY_PARAM_NAME)?.trim();
   if (searchQuery) {
-    strapiApiParams.append(`filters[titulo][$containsi]`, searchQuery);
+    apiParams.append(`filters[titulo][$containsi]`, searchQuery);
   } else {
-    FILTER_SOURCES.forEach((filterConfig) => {
-      const selectedValues = activeFilters?.getAll(filterConfig.queryParamName);
-      if (selectedValues && selectedValues.length > 0) {
-        selectedValues.forEach((slugValue, index) => {
-          // Asumiendo que relationFieldInProduct es el nombre correcto del campo de relación en Strapi
-          strapiApiParams.append(
-            `filters[${filterConfig.relationFieldInProduct}][slug][$in][${index}]`,
-            slugValue
-          );
-        });
-      }
+    FILTER_SOURCES.forEach((source) => {
+      const selected = activeFilters?.getAll(source.queryParamName) || [];
+      selected.forEach((slugValue, idx) => {
+        apiParams.append(
+          `filters[${source.relationFieldInProduct}][slug][$in][${idx}]`,
+          slugValue
+        );
+      });
     });
-    const activeQuickFilter = activeFilters?.get(QUICK_FILTER_PARAM_NAME);
-    if (activeQuickFilter) {
-      if (activeQuickFilter === "inen")
-        strapiApiParams.append(`filters[selloCalidad][$notNull]`, "true");
-      else if (activeQuickFilter === "interiores") {
-        const config = FILTER_SOURCES.find(
-          (f) => f.queryParamName === "ambiente_interior"
+
+    const quick = activeFilters?.get(QUICK_FILTER_PARAM_NAME);
+    if (quick === "inen") {
+      apiParams.append(`filters[selloCalidad][$notNull]`, "true");
+    } else if (quick === "interiores") {
+      const cfg = FILTER_SOURCES.find(
+        (f) => f.queryParamName === "ambiente_interior"
+      );
+      if (cfg)
+        apiParams.append(
+          `filters[${cfg.relationFieldInProduct}][$notNull]`,
+          "true"
         );
-        if (config)
-          strapiApiParams.append(
-            `filters[${config.relationFieldInProduct}][$notNull]`, // Usa el campo de relación correcto
-            "true"
-          );
-      } else if (activeQuickFilter === "exteriores") {
-        const config = FILTER_SOURCES.find(
-          (f) => f.queryParamName === "ambiente_exterior"
+    } else if (quick === "exteriores") {
+      const cfg = FILTER_SOURCES.find(
+        (f) => f.queryParamName === "ambiente_exterior"
+      );
+      if (cfg)
+        apiParams.append(
+          `filters[${cfg.relationFieldInProduct}][$notNull]`,
+          "true"
         );
-        if (config)
-          strapiApiParams.append(
-            `filters[${config.relationFieldInProduct}][$notNull]`, // Usa el campo de relación correcto
-            "true"
-          );
-      }
     }
   }
-  // PRODUCTS_ENDPOINT ya incluye API_URL y /api/
-  const fullUrl = `${PRODUCTS_ENDPOINT}?${strapiApiParams.toString()}`;
-  // console.log("Fetching products (main list):", fullUrl); // Log para depuración
+
+  const url = `${PRODUCTS_ENDPOINT}?${apiParams.toString()}`;
   try {
-    const res = await fetch(fullUrl, { next: { revalidate: 60 } });
+    const res = await fetch(url, { next: { revalidate: 60 } });
     if (!res.ok) {
-      const errorBody = await res.text();
-      console.error(
-        `Error ${res.status} fetching products from ${fullUrl}: ${errorBody}`
-      );
+      console.error(`Error ${res.status} al cargar productos desde ${url}`);
       throw new Error(`Product fetch failed: ${res.status}`);
     }
-    const responseJson: StrapiProductsResponse | [StrapiProductsResponse] =
-      await res.json();
-    // Maneja el caso donde Strapi podría devolver un array con un solo objeto
-    const actualResponse = Array.isArray(responseJson)
-      ? responseJson[0]
-      : responseJson;
+    const json: StrapiProductsResponse = await res.json();
     return {
-      products: actualResponse?.data || [],
-      pagination: actualResponse?.meta?.pagination || null,
+      products: json.data || [],
+      pagination: json.meta?.pagination || null,
     };
   } catch (error) {
-    console.error("Detailed error fetching products:", error);
+    console.error("Error detallado cargando productos:", error);
     return { products: [], pagination: null };
   }
 }
 
 async function getFeaturedProducts(): Promise<Product[]> {
-  const queryParams = new URLSearchParams({
+  const params = new URLSearchParams({
     "filters[destacado][$eq]": "true",
     "populate[imagen]": "*",
     "fields[0]": "titulo",
     "fields[1]": "slug",
     "fields[2]": "descripcion",
-    "pagination[limit]": "12", // Strapi usa pagination[limit] o pagination[pageSize]
+    "pagination[limit]": "12",
     "sort[0]": "updatedAt:desc",
   });
-  // PRODUCTS_ENDPOINT ya incluye API_URL y /api/
-  const fullUrl = `${PRODUCTS_ENDPOINT}?${queryParams.toString()}`;
-  // console.log("Fetching featured products (main page) from:", fullUrl); // Log para depuración
+  const url = `${PRODUCTS_ENDPOINT}?${params.toString()}`;
+
   try {
-    const res = await fetch(fullUrl, { next: { revalidate: 3600 } });
+    const res = await fetch(url, { next: { revalidate: 3600 } });
     if (!res.ok) {
-      console.error(
-        `Error fetching featured products: ${res.status} ${res.statusText}`
-      );
+      console.error(`Error ${res.status} al cargar destacados desde ${url}`);
       return [];
     }
-    const responseJson: StrapiProductsResponse = await res.json();
-    return responseJson.data || [];
+    const json: StrapiProductsResponse = await res.json();
+    return json.data || [];
   } catch (error) {
-    console.error("Exception fetching featured products:", error);
+    console.error("Excepción cargando productos destacados:", error);
     return [];
   }
 }
 
-// --- COMPONENTE DE PÁGINA ---
+// ───────────────────────────────────────────────────────────────────────────────
+// Esta página depende de searchParams para filtrar y paginar en cada petición.
+// Al usar searchParams, Next.js la tratará como dinámica por defecto.
+// ───────────────────────────────────────────────────────────────────────────────
+export const dynamic = "force-dynamic";
+
+type SearchParams = { [key: string]: string | string[] | undefined };
+
 interface PageProps {
-  searchParams?: {
-    page?: string;
-    [SEARCH_QUERY_PARAM_NAME]?: string;
-    [QUICK_FILTER_PARAM_NAME]?: string;
-    // Permite otros parámetros de filtro basados en FILTER_SOURCES
-    [key: string]: string | string[] | undefined;
-  };
+  searchParams?: SearchParams;
 }
 
 export default async function Page({ searchParams }: PageProps) {
-  const currentPageQuery = searchParams?.page;
-  const parsedPage = currentPageQuery ? parseInt(currentPageQuery, 10) : 1;
-  const validCurrentPage = Math.max(1, isNaN(parsedPage) ? 1 : parsedPage);
+  // En Next.js 15, searchParams llega como promesa. Debemos await antes de usarlo.
+  const sp: SearchParams = (await searchParams) || {};
+  const rawPage = Array.isArray(sp.page) ? sp.page[0] : sp.page;
+  const parsedPage = rawPage ? parseInt(rawPage, 10) : NaN;
+  const currentPage = !isNaN(parsedPage) && parsedPage > 0 ? parsedPage : 1;
 
+  // Construimos un objeto URLSearchParams a partir de sp
   const urlSearchParams = new URLSearchParams();
-  if (searchParams) {
-    Object.entries(searchParams).forEach(([key, value]) => {
-      if (typeof value === "string") {
-        urlSearchParams.append(key, value);
-      } else if (Array.isArray(value)) {
-        value.forEach((v) => urlSearchParams.append(key, v));
-      }
-    });
-  }
+  Object.entries(sp).forEach(([key, value]) => {
+    if (typeof value === "string") {
+      urlSearchParams.append(key, value);
+    } else if (Array.isArray(value)) {
+      value.forEach((v) => urlSearchParams.append(key, v));
+    }
+  });
 
+  // Nombre de parámetros de filtros para pasarlos a los componentes hijos
   const sidebarQueryParamNames = FILTER_SOURCES.map(
-    (source) => source.queryParamName
+    (src) => src.queryParamName
   );
 
-  // Las funciones de fetch ahora usan las constantes API_URL y endpoints actualizadas
+  // Ejecutamos las tres llamadas concurrentemente
   const [availableFilters, mainProductsData, featuredProducts] =
     await Promise.all([
       getAvailableFilterOptions(),
       getProducts(
-        { page: validCurrentPage, pageSize: DEFAULT_PAGE_SIZE },
+        { page: currentPage, pageSize: DEFAULT_PAGE_SIZE },
         urlSearchParams
       ),
       getFeaturedProducts(),
@@ -320,15 +288,20 @@ export default async function Page({ searchParams }: PageProps) {
   return (
     <main>
       <HeaderBanner />
+
       <div className="flex flex-col gap-6 px-6 py-8 md:flex-row">
+        {/* Sidebar con filtros */}
         <div className="hidden w-[270px] shrink-0 lg:block">
           <SidebarFilters filterGroups={availableFilters} />
         </div>
+
+        {/* Contenido principal: buscador y grilla de productos */}
         <div className="flex-1">
           <SearchAndTags
             availableFilters={availableFilters}
             sidebarFilterQueryParamNames={sidebarQueryParamNames}
           />
+
           {products.length > 0 ? (
             <ProductGrid
               initialProducts={products}
@@ -341,7 +314,6 @@ export default async function Page({ searchParams }: PageProps) {
                 No se encontraron productos que coincidan con los filtros
                 seleccionados.
               </p>
-              {/* Podrías añadir un mensaje más específico si todos los filtros están vacíos también */}
             </div>
           )}
         </div>
@@ -351,18 +323,9 @@ export default async function Page({ searchParams }: PageProps) {
         <Separator className="my-8 bg-zinc-300 sm:my-10 md:my-12" />
       </div>
 
-      {featuredProducts && featuredProducts.length > 0 && (
+      {featuredProducts.length > 0 && (
         <div className="pb-12">
           <div className="container mx-auto px-4">
-            {/* Considera añadir un título aquí si es necesario */}
-            {/* <div className="mb-8 text-center">
-              <h2 className="text-3xl font-bold uppercase sm:text-4xl">
-                <span className="text-blue-700">PRODUCTOS</span>
-                <span className="ml-2 inline-block rounded-md bg-red-600 px-3 py-1 text-white">
-                  DESTACADOS
-                </span>
-              </h2>
-            </div> */}
             <ProductCarousel products={featuredProducts} />
           </div>
         </div>
