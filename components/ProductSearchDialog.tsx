@@ -14,7 +14,6 @@ import { Search as SearchIcon } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import ProductCardSkeleton from "@/components/ProductCardSkeleton";
 
-// Ahora ambos tipos (Product y StrapiProductsResponse) vienen de un único archivo de tipos
 import type { Product, StrapiProductsResponse } from "@/app/types";
 
 interface ProductSearchDialogProps {
@@ -22,12 +21,14 @@ interface ProductSearchDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// Ejemplo: si en .env tienes NEXT_PUBLIC_STRAPI_API_URL, se usará esa; si no, se recurre al URL “por defecto”
 const STRAPI_BASE_URL =
   process.env.NEXT_PUBLIC_STRAPI_API_URL ||
   "https://servidor-tricolor-64a23aa2b643.herokuapp.com";
 const API_PREFIX = "/api";
 const PRODUCTS_ENDPOINT = `${STRAPI_BASE_URL}${API_PREFIX}/productos-americas`;
+
+// Clave que usaremos en localStorage para cachear los 6 productos destacados
+const CACHE_KEY = "featuredProductsCache";
 
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -54,14 +55,16 @@ const ProductSearchDialog: React.FC<ProductSearchDialogProps> = ({
   const [initialLoadAttempted, setInitialLoadAttempted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * fetchProducts: hace una petición a Strapi.
+   *   - Si ‘query’ está indefinido (primera carga), pide los destacados.
+   *   - Si ‘query’ existe, filtra por título.
+   * Además, si es carga inicial, guarda la respuesta en localStorage.
+   */
   const fetchProducts = useCallback(async (query?: string) => {
     setIsLoading(true);
     setError(null);
 
-    // Los parámetros que pedimos a Strapi:
-    // - populate[imagen]=* para traer la imagen completa
-    // - fields[]=titulo, fields[]=slug para solo esos campos (junto a imagen)
-    // - pagination[pageSize]=6 para mostrar máximo 6 resultados
     const params = new URLSearchParams({
       "populate[imagen]": "*",
       "fields[0]": "titulo",
@@ -70,11 +73,11 @@ const ProductSearchDialog: React.FC<ProductSearchDialogProps> = ({
     });
 
     if (query) {
-      // Si hay texto de búsqueda, filtramos por título (case-insensitive)
+      // Búsqueda por texto
       params.append("filters[titulo][$containsi]", query);
       params.append("sort[0]", "titulo:asc");
     } else {
-      // En la primera carga, mostramos solo los productos destacados
+      // Primera carga: productos destacados
       params.append("filters[destacado][$eq]", "true");
       params.append("sort[0]", "updatedAt:desc");
     }
@@ -85,8 +88,25 @@ const ProductSearchDialog: React.FC<ProductSearchDialogProps> = ({
         throw new Error(`Error al obtener productos: ${res.statusText}`);
       }
       const data: StrapiProductsResponse = await res.json();
-      // data.data es Product[]; cada Product trae atributos completos (incluyendo createdAt, updatedAt, publishedAt, imagen, etc.)
-      setDisplayedProducts(data.data || []);
+      const productsArray: Product[] = data.data || [];
+      setDisplayedProducts(productsArray);
+
+      // Si se trata de la carga inicial (sin query), guardamos en localStorage
+      if (!query) {
+        try {
+          if (typeof window !== "undefined") {
+            window.localStorage.setItem(
+              CACHE_KEY,
+              JSON.stringify(productsArray)
+            );
+          }
+        } catch (e) {
+          console.warn(
+            "No se pudo guardar productos destacados en localStorage:",
+            e
+          );
+        }
+      }
     } catch (err) {
       console.error(err);
       setError(
@@ -96,35 +116,63 @@ const ProductSearchDialog: React.FC<ProductSearchDialogProps> = ({
     } finally {
       setIsLoading(false);
       if (!query) {
-        // Si fue carga inicial (sin query), marcamos que ya intentamos cargar una vez
+        // Marcamos que ya se intentó la carga inicial, para no volverla a ejecutar
         setInitialLoadAttempted(true);
       }
     }
   }, []);
 
-  // Cuando se abre el diálogo por primera vez, hacemos la carga inicial
+  /**
+   * Al abrir el diálogo por primera vez:
+   *   1) Intentamos leer del localStorage.
+   *   2) Si existe cache, lo parseamos y seteamos en estado.
+   *   3) Si no existe (o hay error de parse), hacemos fetch normal.
+   */
   useEffect(() => {
     if (open && !initialLoadAttempted) {
+      if (typeof window !== "undefined") {
+        const cached = window.localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          try {
+            const parsed: Product[] = JSON.parse(cached);
+            setDisplayedProducts(parsed);
+            setInitialLoadAttempted(true);
+            return; // Ya tenemos los productos desde el cache: no volvemos a fetch
+          } catch (e) {
+            console.warn("Error parseando cache de productos destacados:", e);
+            window.localStorage.removeItem(CACHE_KEY);
+          }
+        }
+      }
+      // Si no hay cache válido, hacemos fetch normal
       fetchProducts();
     }
   }, [open, initialLoadAttempted, fetchProducts]);
 
-  // Cada vez que cambia el texto (debounce), volvemos a buscar
+  /**
+   * Cada vez que cambia el texto de búsqueda (debounced):
+   *   - Si hay texto, buscamos por ese texto.
+   *   - Si se borra el texto y ya hubo carga inicial, recargamos destacados.
+   */
   useEffect(() => {
     if (debouncedSearchQuery) {
       fetchProducts(debouncedSearchQuery);
     } else if (initialLoadAttempted && searchQuery === "") {
-      // Si borramos el texto de búsqueda y ya hubo carga inicial, recargamos destacados
       fetchProducts();
     }
   }, [debouncedSearchQuery, searchQuery, initialLoadAttempted, fetchProducts]);
 
-  // Cuando se cierra el diálogo, reiniciamos estado de búsqueda
+  /**
+   * Cuando se cierra el diálogo, reseteamos el searchQuery y permitimos
+   * que, en la próxima apertura, se lea del cache o se vuelva a cargar.
+   */
   useEffect(() => {
     if (!open) {
       setSearchQuery("");
       setInitialLoadAttempted(false);
       setError(null);
+      // NOTA: no limpiamos displayedProducts aquí para que al reabrir,
+      // si hay cache, muestre inmediatamente los productos.
     }
   }, [open]);
 
@@ -149,7 +197,7 @@ const ProductSearchDialog: React.FC<ProductSearchDialogProps> = ({
     }
 
     if (displayedProducts.length === 0) {
-      // Si todavía no se intentó la carga inicial y no hay query, mostramos “Cargando…”
+      // Si no se ha intentado la carga inicial (ni hay query), mostramos mensaje de carga
       if (!initialLoadAttempted && !searchQuery) {
         return (
           <div className="mt-6 py-8 text-center text-zinc-500">
@@ -157,7 +205,7 @@ const ProductSearchDialog: React.FC<ProductSearchDialogProps> = ({
           </div>
         );
       }
-      // Si hay query pero no resultaron coincidencias
+      // Si hay query pero no hay resultados
       if (searchQuery) {
         return (
           <div className="col-span-1 sm:col-span-2 mt-6 py-8 text-center text-zinc-700">
@@ -174,17 +222,16 @@ const ProductSearchDialog: React.FC<ProductSearchDialogProps> = ({
       );
     }
 
-    // Si hay resultados, los mostramos en un grid
+    // Si hay productos (sean destacados o resultado de búsqueda), los mostramos
     return (
       <div className="mt-6 grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-3">
         {displayedProducts.map((product) => (
           <div
             key={product.id}
             onClick={() => {
-              onOpenChange(false); // Cierra el diálogo si el usuario hace clic en el card
+              onOpenChange(false); // Cierra el diálogo si el usuario hace clic en un card
             }}
           >
-            {/* Pasamos el objeto “Product” directamente a ProductCard */}
             <ProductCard product={product} />
           </div>
         ))}

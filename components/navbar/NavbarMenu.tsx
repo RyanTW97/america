@@ -6,7 +6,7 @@ import {
   Popover,
   PopoverTrigger,
   PopoverContent,
-} from "@/components/ui/popover"; // Asegúrate que esta ruta sea correcta
+} from "@/components/ui/popover"; // Asegúrate de que la ruta sea correcta
 import { useState } from "react";
 
 export const NavbarMenu = () => {
@@ -21,7 +21,7 @@ export const NavbarMenu = () => {
   const underline =
     "absolute left-0 -bottom-1 h-[2px] w-full origin-left transform bg-red-500 transition-transform duration-300";
 
-  // Enlaces para "NUESTROS PRODUCTOS" con los parámetros de consulta correctos
+  // Enlaces para "NUESTR‍OS PRODUCTOS"
   const productosLinks = [
     {
       label: "Línea Arquitectónica",
@@ -29,18 +29,18 @@ export const NavbarMenu = () => {
     },
     {
       label: "Línea Metalmecánica",
-      href: "#", // Según la data original, este es un placeholder
+      href: "#", // Placeholder
     },
     {
       label: "Línea Madera",
-      href: "/nuestros-productos?page=1&lineas=linea-madera", // URL corregida
+      href: "/nuestros-productos?page=1&lineas=linea-madera",
     },
     {
       label: "Línea Automotriz",
       href: "/nuestros-productos?page=1&lineas=linea-automotriz",
     },
     {
-      label: "Línea Protective Coatings", // Corresponde a "INDUSTRIAL"
+      label: "Línea Protective Coatings",
       href: "/nuestros-productos?page=1&lineas=linea-industrial",
     },
     {
@@ -48,7 +48,7 @@ export const NavbarMenu = () => {
       href: "/nuestros-productos?page=1&lineas=demarcacion-vial",
     },
     {
-      label: "Línea Pisos Industriales", // Corresponde a "PISOS EPÓXICOS"
+      label: "Línea Pisos Industriales",
       href: "/nuestros-productos?page=1&lineas=pisos-epoxicos",
     },
     {
@@ -70,7 +70,8 @@ export const NavbarMenu = () => {
           />
         </Link>
       </li>
-      {/* QUIENES SOMOS */}
+
+      {/* QUIÉNES SOMOS */}
       <li className="relative">
         <div
           onMouseEnter={() => setQuienesOpen(true)}
@@ -79,8 +80,9 @@ export const NavbarMenu = () => {
         >
           <Popover open={quienesOpen} onOpenChange={setQuienesOpen}>
             <PopoverTrigger asChild>
-              <span className={`${baseLink} py-2 cursor-pointer`}>
-                <Link href="/quienesSomos">QUIENES SOMOS</Link>
+              {/* Ahora Link es el hijo directo de PopoverTrigger */}
+              <Link href="/quienesSomos" className={`${baseLink} py-2`}>
+                QUIÉNES SOMOS
                 <span
                   className={`${underline} ${
                     pathname.startsWith("/quienesSomos")
@@ -88,8 +90,9 @@ export const NavbarMenu = () => {
                       : "scale-x-0"
                   }`}
                 />
-              </span>
+              </Link>
             </PopoverTrigger>
+
             <PopoverContent
               align="start"
               className="p-2 rounded-md shadow-lg border bg-white animate-in fade-in slide-in-from-top-1"
@@ -102,18 +105,9 @@ export const NavbarMenu = () => {
                     label: "Responsabilidad Social",
                     href: "/quienesSomos#responsabilidad-social",
                   },
-                  {
-                    label: "Certificaciones",
-                    href: "/certificaciones",
-                  },
-                  {
-                    label: "Noticias Destacadas",
-                    href: "/noticias",
-                  },
-                  {
-                    label: "Trabaja con Nosotros",
-                    href: "/trabajaNosotros",
-                  },
+                  { label: "Certificaciones", href: "/certificaciones" },
+                  { label: "Noticias Destacadas", href: "/noticias" },
+                  { label: "Trabaja con Nosotros", href: "/trabajaNosotros" },
                 ].map((item, index, arr) => (
                   <Link
                     key={item.href}
@@ -131,6 +125,7 @@ export const NavbarMenu = () => {
           </Popover>
         </div>
       </li>
+
       {/* NUESTROS PRODUCTOS */}
       <li className="relative">
         <div
@@ -140,9 +135,8 @@ export const NavbarMenu = () => {
         >
           <Popover open={productosOpen} onOpenChange={setProductosOpen}>
             <PopoverTrigger asChild>
-              <span className={`${baseLink} py-2 cursor-pointer`}>
-                {/* Este es el Link principal para la sección de productos */}
-                <Link href="/nuestros-productos">NUESTROS PRODUCTOS</Link>
+              <Link href="/nuestros-productos" className={`${baseLink} py-2`}>
+                NUESTROS PRODUCTOS
                 <span
                   className={`${underline} ${
                     pathname.startsWith("/nuestros-productos")
@@ -150,18 +144,18 @@ export const NavbarMenu = () => {
                       : "scale-x-0"
                   }`}
                 />
-              </span>
+              </Link>
             </PopoverTrigger>
+
             <PopoverContent
               align="start"
               className="p-4 rounded-md shadow-lg border bg-white animate-in fade-in slide-in-from-top-1"
             >
               <div className="grid grid-cols-1 gap-x-6 text-sm font-medium w-[250px]">
-                {/* Aquí se itera sobre productosLinks y se usa item.href directamente */}
                 {productosLinks.map((item, index, arr) => (
                   <Link
                     key={item.label}
-                    href={item.href} // Se usa el href definido en productosLinks
+                    href={item.href}
                     onClick={() => setProductosOpen(false)}
                     className={`px-4 py-2 hover:text-red-500 border-b border-gray-200 ${
                       index === arr.length - 1 ? "border-b-0" : ""
@@ -175,6 +169,7 @@ export const NavbarMenu = () => {
           </Popover>
         </div>
       </li>
+
       {/* CENTRO DE CAPACITACIÓN */}
       <li className="relative">
         <div
@@ -182,26 +177,29 @@ export const NavbarMenu = () => {
           onMouseLeave={() => setCapacitacionOpen(false)}
           className="inline-flex"
         >
-          <Link href="/centro-de-capacitacion" legacyBehavior passHref>
-            <Popover open={capacitacionOpen} onOpenChange={setCapacitacionOpen}>
-              <PopoverTrigger asChild>
-                <a className={`${baseLink} py-2 cursor-pointer`}>
-                  CENTRO DE CAPACITACIÓN
-                  <span
-                    className={`${underline} ${
-                      pathname.startsWith("/centro-de-capacitacion")
-                        ? "scale-x-100"
-                        : "scale-x-0"
-                    }`}
-                  />
-                </a>
-              </PopoverTrigger>
-              {/* Puedes añadir PopoverContent aquí si es necesario */}
-            </Popover>
-          </Link>
+          <Popover open={capacitacionOpen} onOpenChange={setCapacitacionOpen}>
+            <PopoverTrigger asChild>
+              {/* Link es el hijo directo, ya no usamos <a> manual */}
+              <Link
+                href="/centro-de-capacitacion"
+                className={`${baseLink} py-2`}
+              >
+                CENTRO DE CAPACITACIÓN
+                <span
+                  className={`${underline} ${
+                    pathname.startsWith("/centro-de-capacitacion")
+                      ? "scale-x-100"
+                      : "scale-x-0"
+                  }`}
+                />
+              </Link>
+            </PopoverTrigger>
+            {/* Si en el futuro requieres contenido extra dentro del Popover, agrégalo aquí */}
+          </Popover>
         </div>
       </li>
-      {/* CONTACTÁCTANOS */}
+
+      {/* CONTÁCTANOS */}
       <li>
         <Link href="/contactanos" className={baseLink}>
           CONTÁCTANOS
