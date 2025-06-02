@@ -27,14 +27,12 @@ const ProductCard: React.FC<ProductCardProps> = ({
   product,
   onFavoriteAction,
 }) => {
-  // 1) Extraemos acciones y estado de favoritos en una sola llamada
-  const {
-    actions: { toggleFavorite, addFavorite },
-    favoriteProducts,
-  } = useFavoritesStore((state) => ({
-    actions: state.actions,
-    favoriteProducts: state.favoriteProducts,
-  }));
+  // 1) Separamos las llamadas a useFavoritesStore para evitar devolver un objeto nuevo cada render
+  const toggleFavorite = useFavoritesStore(
+    (state) => state.actions.toggleFavorite
+  );
+  const addFavorite = useFavoritesStore((state) => state.actions.addFavorite);
+  const favoriteProducts = useFavoritesStore((state) => state.favoriteProducts);
 
   // 2) Acciones del store de interfaz
   const { openFavoritesSheet } = useInterfaceStore((state) => state.actions);
