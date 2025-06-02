@@ -3,10 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import HeaderBanner from "./components/HeaderBanner";
-import SidebarFilters, {
-  FilterGroup,
-  FilterOption,
-} from "./components/SidebarFilters";
+import SidebarFilters, { FilterGroup } from "./components/SidebarFilters";
 import SearchAndTags from "./components/SearchAndTags";
 import ProductGrid from "./components/ProductGrid";
 import ProductCarousel from "@/components/ProductCarousel";
@@ -86,19 +83,16 @@ async function getAvailableFilterOptions(): Promise<FilterGroup[]> {
 
       const res = await fetch(fullOptionsUrl, { next: { revalidate: 3600 } });
       if (!res.ok) {
-        console.error(
-          `Error fetching options for ${source.uiTitle} from ${fullOptionsUrl}: ${res.status} ${res.statusText}`
-        );
         return {
           success: false,
           title: source.uiTitle,
           name: source.queryParamName,
-          options: [] as FilterOption[],
+          options: [],
         };
       }
 
       const responseJson: StrapiFilterCollectionResponse = await res.json();
-      const options: FilterOption[] = (responseJson.data || []).map((item) => ({
+      const options = (responseJson.data || []).map((item) => ({
         label: item.attributes.nombre,
         value: item.attributes.slug,
       }));
@@ -110,12 +104,11 @@ async function getAvailableFilterOptions(): Promise<FilterGroup[]> {
         options,
       };
     } catch (error) {
-      console.error(`Exception fetching options for ${source.uiTitle}:`, error);
       return {
         success: false,
         title: source.uiTitle,
         name: source.queryParamName,
-        options: [] as FilterOption[],
+        options: [],
       };
     }
   });
@@ -205,10 +198,6 @@ async function getProducts(
   try {
     const res = await fetch(fullUrl, { next: { revalidate: 60 } });
     if (!res.ok) {
-      const errorBody = await res.text();
-      console.error(
-        `Error ${res.status} fetching products from ${fullUrl}: ${errorBody}`
-      );
       throw new Error(`Product fetch failed: ${res.status}`);
     }
     const responseJson: StrapiProductsResponse = await res.json();
@@ -217,7 +206,6 @@ async function getProducts(
       pagination: responseJson.meta?.pagination || null,
     };
   } catch (error) {
-    console.error("Detailed error fetching products:", error);
     return { products: [], pagination: null };
   }
 }
@@ -228,25 +216,18 @@ async function getFeaturedProducts(): Promise<Product[]> {
     "populate[imagen]": "*",
     "fields[0]": "titulo",
     "fields[1]": "slug",
-    "fields[2]": "descripcion",
     "pagination[limit]": "12",
     "sort[0]": "updatedAt:desc",
   });
   const fullUrl = `${PRODUCTS_ENDPOINT}?${queryParams.toString()}`;
-
   try {
     const res = await fetch(fullUrl, { next: { revalidate: 3600 } });
     if (!res.ok) {
-      const errorBody = await res.text();
-      console.error(
-        `Error fetching featured products: ${res.status} ${res.statusText}. URL: ${fullUrl}. Response: ${errorBody}`
-      );
       return [];
     }
     const responseJson: StrapiProductsResponse = await res.json();
     return responseJson.data || [];
   } catch (error) {
-    console.error("Exception fetching featured products:", error);
     return [];
   }
 }
@@ -254,29 +235,58 @@ async function getFeaturedProducts(): Promise<Product[]> {
 interface PageProps {
   searchParams: Promise<{
     page?: string;
-    [SEARCH_QUERY_PARAM_NAME]?: string;
-    [QUICK_FILTER_PARAM_NAME]?: string;
+    q?: string; // SEARCH_QUERY_PARAM_NAME
+    quick_filter_mode?: string; // QUICK_FILTER_PARAM_NAME
+    lineas?: string | string[];
+    acabados?: string | string[];
+    ambiente_exterior?: string | string[];
+    ambiente_interior?: string | string[];
+    superficies?: string | string[];
+    tipo_producto?: string | string[];
     [key: string]: string | string[] | undefined;
   }>;
 }
 
 export default async function Page({ searchParams }: PageProps) {
-  const params = await searchParams;
+  const {
+    page: pageFromParam,
+    q: qFromParam,
+    quick_filter_mode: quickFilterFromParam,
+    lineas,
+    acabados,
+    ambiente_exterior,
+    ambiente_interior,
+    superficies,
+    tipo_producto,
+  } = await searchParams;
 
-  const pageParam = params.page as string | undefined;
-  const qParam = params[SEARCH_QUERY_PARAM_NAME] as string | undefined;
-  const quickFilterParam = params[QUICK_FILTER_PARAM_NAME] as
-    | string
-    | undefined;
+  const currentUrlSearchParams = new URLSearchParams();
 
-  const parsedPage = pageParam ? parseInt(pageParam, 10) : 1;
-  const validCurrentPage = Math.max(1, isNaN(parsedPage) ? 1 : parsedPage);
+  const appendParam = (key: string, value: string | string[] | undefined) => {
+    if (value !== undefined) {
+      if (typeof value === "string") {
+        currentUrlSearchParams.append(key, value);
+      } else if (Array.isArray(value)) {
+        value.forEach((v) => currentUrlSearchParams.append(key, v));
+      }
+    }
+  };
 
-  const urlSearchParams = new URLSearchParams();
-  if (pageParam) urlSearchParams.append("page", pageParam);
-  if (qParam) urlSearchParams.append(SEARCH_QUERY_PARAM_NAME, qParam);
-  if (quickFilterParam)
-    urlSearchParams.append(QUICK_FILTER_PARAM_NAME, quickFilterParam);
+  appendParam("page", pageFromParam);
+  appendParam(SEARCH_QUERY_PARAM_NAME, qFromParam);
+  appendParam(QUICK_FILTER_PARAM_NAME, quickFilterFromParam);
+
+  appendParam("lineas", lineas);
+  appendParam("acabados", acabados);
+  appendParam("ambiente_exterior", ambiente_exterior);
+  appendParam("ambiente_interior", ambiente_interior);
+  appendParam("superficies", superficies);
+  appendParam("tipo_producto", tipo_producto);
+
+  const pageForLogic = currentUrlSearchParams.get("page");
+  const validCurrentPage = pageForLogic
+    ? Math.max(1, parseInt(pageForLogic, 10) || 1)
+    : 1;
 
   const sidebarQueryParamNames = FILTER_SOURCES.map(
     (source) => source.queryParamName
@@ -287,7 +297,7 @@ export default async function Page({ searchParams }: PageProps) {
       getAvailableFilterOptions(),
       getProducts(
         { page: validCurrentPage, pageSize: DEFAULT_PAGE_SIZE },
-        urlSearchParams
+        currentUrlSearchParams
       ),
       getFeaturedProducts(),
     ]);

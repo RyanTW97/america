@@ -1,53 +1,90 @@
 // app/nuestros-productos/[slug]/components/ProductImageDisplay.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+// Eliminamos useState y useEffect para el 'liked' local
 import Image from "next/image";
 import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+// Importaciones para la funcionalidad de Favoritos
+import type { ProductForFavorites } from "@/app/types/favorites"; // Ajusta la ruta si es necesario
+import { useFavoritesStore } from "@/lib/store/useFavoritesStore"; // Ajusta la ruta si es necesario
+import { useInterfaceStore } from "@/lib/store/useInterfaceStore"; // Ajusta la ruta si es necesario
+import { toast } from "sonner"; // Para las notificaciones
+
 interface ProductImageDisplayProps {
   productId: number;
+  productTitulo: string; // Nueva prop
+  productSlug: string; // Nueva prop
   imageUrl?: string | null;
   altText?: string | null;
-  hasSelloCalidad?: boolean; // Nueva prop
+  hasSelloCalidad?: boolean;
 }
 
 const ProductImageDisplay = ({
   productId,
+  productTitulo,
+  productSlug,
   imageUrl,
   altText = "Imagen del producto",
-  hasSelloCalidad = false, // Valor por defecto si no se proporciona
+  hasSelloCalidad = false,
 }: ProductImageDisplayProps) => {
-  const localStorageKey = `liked_product_${productId}`;
-  const [liked, setLiked] = useState<boolean>(false);
+  // Conectar a los stores de Zustand
+  const {
+    toggleFavorite: toggleFavoriteAction,
+    addFavorite: addFavoriteAction,
+  } = useFavoritesStore((state) => state.actions);
 
-  useEffect(() => {
-    try {
-      const storedLikedState = localStorage.getItem(localStorageKey);
-      if (storedLikedState !== null) {
-        setLiked(JSON.parse(storedLikedState));
-      }
-    } catch (error) {
-      console.error("Error al leer de localStorage:", error);
-    }
-  }, [localStorageKey]);
+  const isLiked = useFavoritesStore((state) =>
+    state.favoriteProducts.some((favProduct) => favProduct.id === productId)
+  );
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(localStorageKey, JSON.stringify(liked));
-    } catch (error) {
-      console.error("Error al escribir en localStorage:", error);
-    }
-  }, [liked, localStorageKey]);
+  const { openFavoritesSheet } = useInterfaceStore((state) => state.actions);
 
   const handleLikeClick = () => {
-    setLiked((prevLiked) => !prevLiked);
+    if (!imageUrl) {
+      // No se puede añadir a favoritos si no hay imagen (o la info esencial)
+      toast.error(
+        "No se puede añadir este producto a favoritos en este momento."
+      );
+      return;
+    }
+
+    const productDataForFavorite: ProductForFavorites = {
+      id: productId,
+      titulo: productTitulo,
+      slug: productSlug,
+      imageUrl: imageUrl, // Usamos la imageUrl proporcionada
+    };
+
+    const result = toggleFavoriteAction(productDataForFavorite);
+
+    if (result.status === "added") {
+      toast.success(`"${productTitulo}" añadido a favoritos.`, {
+        action: {
+          label: "Ver favoritos",
+          onClick: () => openFavoritesSheet(),
+        },
+        duration: 3000,
+      });
+    } else if (result.status === "removed" && result.product) {
+      const removedProduct = result.product;
+      toast.info(`"${productTitulo}" eliminado de favoritos.`, {
+        action: {
+          label: "Deshacer",
+          onClick: () => {
+            addFavoriteAction(removedProduct);
+            toast.success(`"${removedProduct.titulo}" restaurado a favoritos.`);
+          },
+        },
+        duration: 5000,
+      });
+    }
   };
 
   // Dimensiones condicionales de la imagen
   const productImageWidth = hasSelloCalidad ? 613 : 500;
-  const productImageHeight = hasSelloCalidad ? 577 : 470; // Mantiene un aspect ratio similar
+  const productImageHeight = hasSelloCalidad ? 577 : 470;
 
   return (
     <div className="relative flex w-full justify-center">
@@ -62,14 +99,19 @@ const ProductImageDisplay = ({
           type="button"
           onClick={handleLikeClick}
           className={cn(
-            "absolute -left-2 -top-2 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg transition-all duration-200 ease-in-out hover:scale-110 sm:-left-3 sm:-top-3",
-            liked ? "text-red-500" : "text-zinc-400 hover:text-red-400"
+            "absolute -left-2 -top-2 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white shadow-lg transition-all duration-200 ease-in-out hover:scale-110 sm:-left-3 sm:-top-3"
+            // Las clases de texto para el color del corazón ya no son necesarias aquí si 'fill-current' se usa bien
           )}
-          aria-label={liked ? "Quitar de favoritos" : "Añadir a favoritos"}
+          aria-label={isLiked ? "Quitar de favoritos" : "Añadir a favoritos"}
         >
           <Heart
-            className={cn("h-5 w-5 sm:h-6 sm:w-6", liked && "fill-current")}
-            strokeWidth={1.5}
+            className={cn(
+              "h-5 w-5 sm:h-6 sm:w-6 transition-all", // Añadido transition-all
+              isLiked
+                ? "fill-red-500 text-red-600" // Estilo cuando está "liked"
+                : "text-zinc-400 hover:text-red-500" // Estilo cuando no está "liked"
+            )}
+            strokeWidth={isLiked ? 2 : 1.5} // Ajusta el strokeWidth también
           />
         </button>
 
@@ -81,7 +123,7 @@ const ProductImageDisplay = ({
               width={productImageWidth}
               height={productImageHeight}
               className="h-full w-full object-contain"
-              priority
+              priority // Es la imagen principal de la página de producto, priority es bueno
             />
           ) : (
             <div
