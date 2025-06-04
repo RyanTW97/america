@@ -1,7 +1,7 @@
 "use client";
 
 import useEmblaCarousel from "embla-carousel-react";
-import { useCallback, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -14,80 +14,39 @@ type Slide = {
 };
 
 const AUTOPLAY_INTERVAL = 5000;
-const CACHE_SLIDES_KEY = "carouselSlides";
-const CACHE_IMAGES_KEY = "carouselSlideImages";
-const CACHE_EXPIRATION_MS = 1000 * 60 * 60; // 1 hora
+const CACHE_SLIDES_KEY = "carouselSlidesData"; // Cambiado para evitar colisiones con caché antigua
+const CACHE_EXPIRATION_MS = 1000 * 60 * 60; // 1 hora (60 minutos)
 
 const Carousel = () => {
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true });
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
   const [slides, setSlides] = useState<Slide[]>([]);
-  const [imageUrls, setImageUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Para depurar si Embla interpreta clic vs drag
-  const pointerDownX = useRef<number | null>(null);
-  const pointerDownY = useRef<number | null>(null);
 
   useEffect(() => {
     setLoading(true);
 
-    // 1) Intentamos leer del cache de SLIDES
+    // 1. Intentar cargar slides desde localStorage
     try {
       const rawSlidesCache = localStorage.getItem(CACHE_SLIDES_KEY);
       if (rawSlidesCache) {
-        const { slides: cachedSlides, timestamp: slidesTimestamp } =
-          JSON.parse(rawSlidesCache);
-        const now = Date.now();
-
-        if (now - slidesTimestamp < CACHE_EXPIRATION_MS) {
-          // El cache de slides completa es válido: lo usamos
-          console.log(
-            "[Cache SLIDES] Cargando slides completos desde localStorage:"
-          );
+        const { slides: cachedSlides, timestamp } = JSON.parse(rawSlidesCache);
+        if (Date.now() - timestamp < CACHE_EXPIRATION_MS) {
           setSlides(cachedSlides);
-
-          // 1a) Intentamos leer también el cache de IMAGES
-          try {
-            const rawImagesCache = localStorage.getItem(CACHE_IMAGES_KEY);
-            if (rawImagesCache) {
-              const { imageUrls: cachedImageUrls, timestamp: imagesTimestamp } =
-                JSON.parse(rawImagesCache);
-              if (now - imagesTimestamp < CACHE_EXPIRATION_MS) {
-                console.log(
-                  "[Cache IMAGES] Cargando solo URLs de imágenes desde localStorage:"
-                );
-                setImageUrls(cachedImageUrls);
-              } else {
-                console.log("[Cache IMAGES] Expirado: se borrará:");
-                localStorage.removeItem(CACHE_IMAGES_KEY);
-              }
-            }
-          } catch (e) {
-            console.error(
-              "[Cache IMAGES] Error leyendo/parsing cache de imágenes:",
-              e
-            );
-            localStorage.removeItem(CACHE_IMAGES_KEY);
-          }
-
           setLoading(false);
-          return; // ¡Ya cargamos todo del cache de slides!
-        } else {
-          console.log("[Cache SLIDES] Expirado. Borrando cache de slides.");
-          localStorage.removeItem(CACHE_SLIDES_KEY);
+          return; // Datos cargados desde caché válida
         }
+        localStorage.removeItem(CACHE_SLIDES_KEY); // Caché expirada
       }
-    } catch (e) {
-      console.error("[Cache SLIDES] Error leyendo/parsing cache de slides:", e);
-      localStorage.removeItem(CACHE_SLIDES_KEY);
+    } catch (error) {
+      console.error("Error al leer/parsear caché de slides:", error);
+      localStorage.removeItem(CACHE_SLIDES_KEY); // Limpiar caché corrupta
     }
 
-    // 2) Si llegamos aquí, significa que no queremos (o no podemos) usar el cache de SLIDES, así que hacemos fetch a Strapi
-    (async () => {
+    // 2. Si no hay caché válida, hacer fetch a Strapi
+    const fetchSlides = async () => {
       try {
-        console.log("[Fetch] Solicitando datos a Strapi...");
         const res = await fetch(
           "https://servidor-tricolor-64a23aa2b643.herokuapp.com/api/carousel-americas?populate=*"
         );
@@ -95,142 +54,67 @@ const Carousel = () => {
           throw new Error(`Error de red: ${res.status} ${res.statusText}`);
         }
         const jsonResponse = await res.json();
-        console.log("[Fetch] JSON completo devuelto por Strapi:", jsonResponse);
 
-        // Ahora sabemos que jsonResponse es { data: [...], meta: {...} }
-        const strapiData = jsonResponse;
-        console.log("[Fetch] strapiData:", strapiData);
-
-        if (!strapiData || !Array.isArray(strapiData.data)) {
+        if (!jsonResponse || !Array.isArray(jsonResponse.data)) {
           console.error(
-            "[Fetch] Estructura inesperada. strapiData.data no es un arreglo:",
-            strapiData
+            "Estructura de respuesta inesperada de Strapi:",
+            jsonResponse
           );
           setSlides([]);
-          setImageUrls([]);
-          setLoading(false);
           return;
         }
 
-        // 2a) Ordenamos por id (ascendente)
-        const sortedData: any[] = [...strapiData.data].sort(
+        const sortedData: any[] = [...jsonResponse.data].sort(
           (a, b) => a.id - b.id
         );
 
-        // 2b) Mapeamos cada elemento a nuestro tipo Slide
         const mappedSlides: Slide[] = sortedData.map((item: any) => {
-          console.log(
-            `[Mapeo] item.id=${item.id} → item.attributes COMPLETO:`,
-            item.attributes
-          );
+          const attributes = item.attributes;
+          let linkUrl =
+            attributes.Link || attributes.link || attributes.linkInterno || "#";
 
-          // 2b.1) Extraer el campo correcto para el link
-          const rawLink1 = item.attributes.Link; // ej. "Link"
-          const rawLink2 = item.attributes.link; // ej. "link"
-          const rawLink3 = item.attributes.linkInterno; // ej. "linkInterno"
-          let linkUrl = "#";
-
-          if (typeof rawLink1 === "string") {
-            linkUrl = rawLink1;
-          } else if (typeof rawLink2 === "string") {
-            linkUrl = rawLink2;
-          } else if (typeof rawLink3 === "string") {
-            linkUrl = rawLink3;
-          } else {
-            console.warn(
-              `[Mapeo] No se encontró campo "Link" válido en item.id=${item.id}. Usando "#".`
-            );
-          }
-
-          // 2b.2) Construimos la URL de la imagen
-          const imageUrlFromStrapi =
-            item.attributes.Imagen?.data?.attributes?.url;
           let finalImageUrl = "";
+          const imageUrlFromStrapi = attributes.Imagen?.data?.attributes?.url;
           if (typeof imageUrlFromStrapi === "string") {
-            if (imageUrlFromStrapi.startsWith("http")) {
-              finalImageUrl = imageUrlFromStrapi;
-            } else {
-              finalImageUrl = `https://servidor-tricolor-64a23aa2b643.herokuapp.com${imageUrlFromStrapi}`;
-            }
-          } else {
-            console.warn(
-              `[Mapeo] No se encontró "Imagen.data.attributes.url" para item.id=${item.id}.`
-            );
+            finalImageUrl = imageUrlFromStrapi.startsWith("http")
+              ? imageUrlFromStrapi
+              : `https://servidor-tricolor-64a23aa2b643.herokuapp.com${imageUrlFromStrapi}`;
           }
 
-          // 2b.3) Determinar si el link es externo
           const isExt =
             typeof linkUrl === "string" &&
             (linkUrl.startsWith("http") || linkUrl.startsWith("mailto:"));
-          console.log(
-            `[Mapeo] Para item.id=${item.id} → linkUrl="${linkUrl}", isExternal=${isExt}`
-          );
 
           return {
             id: item.id,
             imageUrl: finalImageUrl,
             link: linkUrl,
-            alt: item.attributes.Text || `Imagen carrusel ${item.id}`,
+            alt: attributes.Text || `Imagen carrusel ${item.id}`,
             isExternal: isExt,
           };
         });
 
-        console.log("[Fetch] mappedSlides definitivo:", mappedSlides);
         setSlides(mappedSlides);
 
-        // 2c) Guardamos en cache el arreglo completo de slides
+        // Guardar en caché
         try {
           localStorage.setItem(
             CACHE_SLIDES_KEY,
             JSON.stringify({ slides: mappedSlides, timestamp: Date.now() })
           );
-          console.log("[Cache SLIDES] Slides guardados en localStorage.");
         } catch (err) {
-          console.error("[Cache SLIDES] Error guardando en localStorage:", err);
+          console.error("Error guardando slides en localStorage:", err);
         }
-
-        // 2d) Extraemos solo las URLs de las imágenes, y las guardamos en CACHE_IMAGES_KEY
-        const onlyImageUrls = mappedSlides.map((s) => s.imageUrl);
-        try {
-          localStorage.setItem(
-            CACHE_IMAGES_KEY,
-            JSON.stringify({ imageUrls: onlyImageUrls, timestamp: Date.now() })
-          );
-          console.log(
-            "[Cache IMAGES] Solo URLs de imagen guardadas en localStorage:",
-            onlyImageUrls
-          );
-        } catch (err) {
-          console.error(
-            "[Cache IMAGES] Error guardando URLs de imagen en localStorage:",
-            err
-          );
-        }
-
-        // 2e) Actualizamos el estado de imageUrls con las mismas URLs que acabamos de guardar
-        setImageUrls(onlyImageUrls);
       } catch (err) {
-        console.error("[Fetch] Error al traer slides de Strapi:", err);
-        setSlides([]);
-        setImageUrls([]);
+        console.error("Error al obtener slides de Strapi:", err);
+        setSlides([]); // Asegurar que slides esté vacío en caso de error
       } finally {
         setLoading(false);
       }
-    })();
-  }, []);
+    };
 
-  // -------------------------------------------------------------------------
-  // Si quisieras un mecanismo extra (por ejemplo, recargar SOLO las imágenes
-  // sin volver a descargar todo el arreglo de slides), podrías exponer aquí
-  // una función que:
-  //   1) haga fetch de un endpoint “ligero” que devuelva únicamente las URLs
-  //      de las nuevas imágenes,
-  //   2) actualice localStorage bajo CACHE_IMAGES_KEY,
-  //   3) actualice setImageUrls(nuevasUrls).
-  //
-  // Pero eso ya sale del alcance de cómo Next/Image cachea internamente las imágenes
-  // en el navegador; aquí simplemente mantendríamos en localStorage las URLs.
-  // -------------------------------------------------------------------------
+    fetchSlides();
+  }, []); // Se ejecuta solo al montar
 
   const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
   const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
@@ -241,146 +125,98 @@ const Carousel = () => {
   }, [emblaApi]);
 
   useEffect(() => {
-    if (!emblaApi) return;
-
-    if (slides.length === 0) {
-      if (emblaApi.canScrollNext() || emblaApi.canScrollPrev()) {
-        emblaApi.reInit();
-      }
-      return;
-    }
+    if (!emblaApi || slides.length === 0) return;
 
     emblaApi.on("select", onSelect);
-    onSelect();
-
-    // Detectar pointerDown para depurar drag vs clic
-    const handlePointerDown = (event: any) => {
-      if (
-        event &&
-        typeof event.clientX === "number" &&
-        typeof event.clientY === "number"
-      ) {
-        pointerDownX.current = event.clientX;
-        pointerDownY.current = event.clientY;
-      } else {
-        pointerDownX.current = null;
-        pointerDownY.current = null;
-      }
-    };
-    // Detectar pointerUp
-    const handlePointerUp = (event: any) => {
-      if (
-        event &&
-        typeof event.clientX === "number" &&
-        typeof event.clientY === "number" &&
-        pointerDownX.current !== null &&
-        pointerDownY.current !== null
-      ) {
-        const dx = Math.abs(event.clientX - pointerDownX.current);
-        const dy = Math.abs(event.clientY - pointerDownY.current);
-        console.log(
-          `[Embla] pointerUp en: (${event.clientX}, ${
-            event.clientY
-          }), desplazamiento: dx=${dx.toFixed(1)}, dy=${dy.toFixed(1)}`
-        );
-
-        if (dx < 5 && dy < 5) {
-          const slide = slides[selectedIndex];
-          console.log(
-            `[Depura] Se consideró CLIC en slide index=${selectedIndex} (id=${slide?.id}), link="${slide?.link}"`
-          );
-        } else {
-          console.log(`[Depura] Esto fue considerado un DRAG (dx o dy >= 5).`);
-        }
-      } else {
-        console.log(
-          "[Embla] pointerUp sin coords válidas o pointerDown no registrado."
-        );
-      }
-    };
-
-    emblaApi.on("pointerDown", handlePointerDown);
-    emblaApi.on("pointerUp", handlePointerUp);
+    onSelect(); // Llamar inicialmente para setear el índice correcto
 
     const autoplayId = setInterval(() => {
-      if (!isHovered) emblaApi.scrollNext();
+      if (!isHovered) {
+        emblaApi.scrollNext();
+      }
     }, AUTOPLAY_INTERVAL);
 
     return () => {
       clearInterval(autoplayId);
       emblaApi.off("select", onSelect);
-      emblaApi.off("pointerDown", handlePointerDown);
-      emblaApi.off("pointerUp", handlePointerUp);
     };
-  }, [emblaApi, onSelect, isHovered, slides, selectedIndex]);
+  }, [emblaApi, onSelect, isHovered, slides.length]); // slides.length como dependencia para re-inicializar si los slides cambian
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <span>Cargando carrusel...</span>
+      <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg">
+        <span className="text-gray-500">Cargando carrusel...</span>
       </div>
     );
   }
 
   if (!slides.length) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <span>No hay imágenes disponibles para mostrar.</span>
+      <div className="flex items-center justify-center h-64 bg-gray-100 rounded-lg">
+        <span className="text-gray-500">
+          No hay imágenes disponibles para mostrar.
+        </span>
       </div>
     );
   }
 
   return (
     <div
-      className="flex flex-col items-center space-y-6"
+      className="flex flex-col items-center w-full" // Asegura que ocupe el ancho disponible
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="relative w-full overflow-hidden">
+      <div className="relative w-full overflow-hidden rounded-xl">
+        {" "}
+        {/* Contenedor principal del carrusel */}
         <div className="embla" ref={emblaRef}>
           <div className="flex">
+            {" "}
+            {/* Contenedor de slides de Embla */}
             {slides.map((slide, i) => {
-              console.log(
-                `[Render Slide] índice=${i}, id=${slide.id}, link="${slide.link}", isExternal=${slide.isExternal}`
-              );
-
               const imageElement = slide.imageUrl ? (
                 <Image
                   src={slide.imageUrl}
                   alt={slide.alt}
-                  width={1440}
-                  height={540}
-                  className="w-full object-cover rounded-xl
-                    h-[250px] sm:h-[300px] md:h-[300px] lg:h-[450px] xl:h-[500px]"
+                  width={1440} // Ancho base para cálculo de aspect ratio
+                  height={540} // Alto base para cálculo de aspect ratio
+                  className="w-full object-cover h-[250px] sm:h-[300px] md:h-[350px] lg:h-[450px] xl:h-[500px]" // Alturas responsivas
                   priority={i === 0}
-                  unoptimized={slide.imageUrl.endsWith(".gif")}
+                  unoptimized={slide.imageUrl.endsWith(".gif")} // Si usas GIFs
                   draggable={false}
                 />
               ) : (
                 <div
-                  className="w-full bg-gray-200 flex items-center justify-center rounded-xl
-                    h-[250px] sm:h-[300px] md:h-[300px] lg:h-[450px] xl:h-[500px]"
+                  className="w-full bg-gray-200 flex items-center justify-center 
+                    h-[250px] sm:h-[300px] md:h-[350px] lg:h-[450px] xl:h-[500px]"
                 >
-                  <span>{slide.alt || "Imagen no disponible"}</span>
+                  <span className="text-gray-500">
+                    {slide.alt || "Imagen no disponible"}
+                  </span>
                 </div>
               );
 
-              const isHash = slide.link === "#" || slide.link.startsWith("#/");
-              if (slide.isExternal || isHash) {
+              const isHashLink =
+                slide.link === "#" || slide.link.startsWith("#/");
+
+              // Si el link es solo "#" o empieza con "#/", no lo envolvemos en Link de Next.js para evitar errores de navegación,
+              // y usamos un <a> simple. Tampoco abrimos en nueva pestaña.
+              if (slide.isExternal || isHashLink) {
                 return (
-                  <div key={slide.id} className="min-w-full">
+                  <div key={slide.id} className="min-w-full flex-shrink-0">
+                    {" "}
+                    {/* Cada slide ocupa todo el ancho */}
                     <a
                       href={slide.link}
-                      target={slide.isExternal ? "_blank" : undefined}
-                      rel={slide.isExternal ? "noopener noreferrer" : undefined}
+                      target={
+                        slide.isExternal && !isHashLink ? "_blank" : undefined
+                      }
+                      rel={
+                        slide.isExternal && !isHashLink
+                          ? "noopener noreferrer"
+                          : undefined
+                      }
                       className="block"
-                      onClick={(e) => {
-                        console.log(
-                          `[Click <a>] Slide ${i}, href="${slide.link}", isExternal=${slide.isExternal}`
-                        );
-                        // Para pausar la navegación y solo ver el log, descomenta:
-                        // e.preventDefault();
-                      }}
                     >
                       {imageElement}
                     </a>
@@ -388,18 +224,8 @@ const Carousel = () => {
                 );
               } else {
                 return (
-                  <div key={slide.id} className="min-w-full">
-                    <Link
-                      href={slide.link}
-                      className="block"
-                      onClick={(e) => {
-                        console.log(
-                          `[Click <Link>] Slide ${i}, href="${slide.link}", isExternal=${slide.isExternal}`
-                        );
-                        // Para pausar la navegación y solo ver el log, descomenta:
-                        // e.preventDefault();
-                      }}
-                    >
+                  <div key={slide.id} className="min-w-full flex-shrink-0">
+                    <Link href={slide.link} className="block">
                       {imageElement}
                     </Link>
                   </div>
@@ -408,42 +234,66 @@ const Carousel = () => {
             })}
           </div>
         </div>
-
         {slides.length > 1 && (
           <>
             <button
               onClick={scrollPrev}
-              className="absolute top-1/2 left-4 z-10 transform -translate-y-1/2 bg-white/80 rounded-full p-2 hover:bg-white shadow-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+              className="absolute top-1/2 left-3 sm:left-4 z-10 transform -translate-y-1/2 bg-white/70 hover:bg-white/90 rounded-full p-2 shadow-md focus:outline-none focus:ring-2 focus:ring-gray-700 transition-opacity"
               aria-label="Slide anterior"
             >
-              &#8592;
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M15.75 19.5L8.25 12l7.5-7.5"
+                />
+              </svg>
             </button>
             <button
               onClick={scrollNext}
-              className="absolute top-1/2 right-4 z-10 transform -translate-y-1/2 bg-white/80 rounded-full p-2 hover:bg-white shadow-md focus:outline-none focus:ring-2 focus:ring-gray-500"
+              className="absolute top-1/2 right-3 sm:right-4 z-10 transform -translate-y-1/2 bg-white/70 hover:bg-white/90 rounded-full p-2 shadow-md focus:outline-none focus:ring-2 focus:ring-gray-700 transition-opacity"
               aria-label="Siguiente slide"
             >
-              &#8594;
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M8.25 4.5l7.5 7.5-7.5 7.5"
+                />
+              </svg>
             </button>
           </>
         )}
       </div>
 
       {slides.length > 1 && (
-        <div className="flex space-x-3 mt-4">
+        <div className="flex space-x-2 sm:space-x-3 mt-4">
           {slides.map((_, i) => (
             <button
               key={i}
               onClick={() => emblaApi?.scrollTo(i)}
               className={`
                 rounded-full border-2 transform transition-all duration-300 ease-in-out
-                w-3 h-3 sm:w-3 sm:h-3 md:w-3 md:h-3
-                lg:w-4 lg:h-4
-                focus:outline-none focus:ring-1 focus:ring-offset-1 focus:ring-black
+                w-2.5 h-2.5 sm:w-3 sm:h-3 
+                focus:outline-none 
                 ${
                   selectedIndex === i
-                    ? "scale-125 bg-black border-black"
-                    : "scale-100 bg-gray-300 border-gray-400 hover:scale-110 hover:bg-gray-400"
+                    ? "scale-110 bg-gray-800 border-gray-800"
+                    : "bg-gray-300 border-gray-400 hover:bg-gray-400 hover:border-gray-500"
                 }
               `}
               aria-label={`Ir al slide ${i + 1}`}
