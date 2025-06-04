@@ -28,7 +28,7 @@ const PageBannerImage: React.FC<PageBannerImageProps> = ({
         fill // fill hace que la imagen ocupe el contenedor padre
         priority={priority}
         sizes="100vw" // Importante para <Image fill> para optimización
-        className="object-cover object-center" // Cambiado de object-top a object-bottom
+        className="object-cover object-top" // Cambiado de object-top a object-bottom
       />
     </div>
   );
