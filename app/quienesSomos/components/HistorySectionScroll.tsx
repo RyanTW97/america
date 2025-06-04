@@ -1,8 +1,10 @@
+// components/HistorySectionScroll.tsx
 "use client";
 
 import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import VideoPlaceholder from "./VideoPlaceholder";
+// Ya no importamos VideoPlaceholder
+// import VideoPlaceholder from "./VideoPlaceholder";
 
 const historySteps = [
   {
@@ -28,13 +30,23 @@ const fadeInUp = {
 const HistorySectionScroll = () => {
   const [activeStep, setActiveStep] = useState(0);
   const sectionRef = useRef<HTMLDivElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null); // Ref para el elemento de video
 
   useEffect(() => {
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.isIntersecting) setActiveStep(0);
+        if (!entry.isIntersecting) {
+          setActiveStep(0);
+          videoRef.current?.pause(); // Pausar video si la sección no está visible
+        } else {
+          videoRef.current
+            ?.play()
+            .catch((error) =>
+              console.log("Error al intentar reproducir video:", error)
+            ); // Reproducir video cuando la sección es visible
+        }
       },
-      { threshold: 0.1 }
+      { threshold: 0.1 } // Ajustar umbral según necesidad
     );
 
     const el = sectionRef.current;
@@ -48,43 +60,45 @@ const HistorySectionScroll = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       setActiveStep((prev) => (prev < historySteps.length - 1 ? prev + 1 : 0));
-    }, 10000);
+    }, 10000); // 10 segundos para cambio de texto
     return () => clearInterval(interval);
   }, []);
 
   const handleDotClick = (index: number) => {
     setActiveStep(index);
-    sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Opcional: hacer scroll a la sección si se hace clic en un punto
+    // sectionRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
   return (
     <motion.section
       ref={sectionRef}
-      className="relative w-full py-16 overflow-hidden bg-white text-gray-800 scroll-mt-80"
+      className="relative w-full py-16 overflow-hidden bg-white text-gray-800 scroll-mt-20 md:scroll-mt-24" // Ajustado scroll-mt
       initial="hidden"
       whileInView="visible"
-      viewport={{ amount: 0.5 }}
+      viewport={{ amount: 0.2 }} // Umbral para activar la animación
     >
-      <div className="container mx-auto">
-        <div className="flex flex-col md:flex-row items-center gap-12">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
+          {/* Sección de Texto */}
           <div className="w-full md:w-1/2">
             <motion.h2
-              className="text-3xl md:text-4xl lg:text-5xl font-extrabold text-blue-800 mb-6 font-archivo"
+              className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-blue-800 mb-6 font-archivo"
               custom={0}
               variants={fadeInUp}
             >
-              Historia
+              Nuestra Historia
             </motion.h2>
 
             <motion.div
-              className="relative min-h-[250px] md:min-h-[300px] mb-6 pb-20 md:pb-6"
-              custom={0.6}
+              className="relative min-h-[280px] sm:min-h-[300px] md:min-h-[320px] mb-6" // Altura mínima ajustada
+              custom={0.3} // Retraso ajustado
               variants={fadeInUp}
             >
               <AnimatePresence mode="wait">
                 <motion.p
                   key={activeStep}
-                  className="text-base md:text-lg lg:text-xl leading-relaxed absolute inset-0 text-justify font-archivo"
+                  className="text-base md:text-lg leading-relaxed text-justify font-archivo text-gray-700" // Color de texto ajustado
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20 }}
@@ -95,13 +109,14 @@ const HistorySectionScroll = () => {
               </AnimatePresence>
             </motion.div>
 
-            <div className="flex justify-center gap-3 mt-24 md:mt-14 lg:mt-10">
+            {/* Puntos de Navegación */}
+            <div className="flex justify-center items-center gap-3 mt-8 md:mt-6">
               {historySteps.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => handleDotClick(index)}
-                  aria-label={`Ir al paso ${index + 1}`}
-                  className={`w-3 h-3 rounded-full transition-all ${
+                  aria-label={`Ir al paso de historia ${index + 1}`}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
                     index === activeStep
                       ? "bg-blue-800 scale-125"
                       : "bg-gray-300 hover:bg-gray-400"
@@ -111,13 +126,24 @@ const HistorySectionScroll = () => {
             </div>
           </div>
 
-          {/* Video */}
+          {/* Sección de Video */}
           <motion.div
-            className="w-full md:w-1/2 flex items-center justify-center max-h-[60vh]"
-            custom={0}
+            className="w-full md:w-1/2 flex items-center justify-center mt-8 md:mt-0"
+            custom={0} // Animación al mismo tiempo que el título o ligeramente después
             variants={fadeInUp}
           >
-            <VideoPlaceholder className="w-full max-w-md lg:max-w-lg shadow-lg" />
+            <div className="w-full max-w-md lg:max-w-lg rounded-lg overflow-hidden shadow-2xl aspect-video">
+              <video
+                ref={videoRef}
+                src="/videobanner.mp4" // Ruta al video en la carpeta public
+                className="w-full h-full object-cover"
+                autoPlay
+                muted
+                loop
+                playsInline // Importante para autoplay en móviles, especialmente iOS
+                preload="metadata" // Ayuda a cargar metadatos del video rápidamente
+              />
+            </div>
           </motion.div>
         </div>
       </div>

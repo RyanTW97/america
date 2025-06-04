@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { NavbarMenu } from "./NavbarMenu";
 import MobileMenu from "./MobileMenu";
-import { Search, Heart, Menu as MenuIcon } from "lucide-react"; // Renombrado Menu a MenuIcon para evitar conflicto
+import { Search, Heart, Menu as MenuIcon } from "lucide-react";
 import {
   Sheet,
   SheetContent,
@@ -12,38 +12,60 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Badge } from "@/components/ui/badge"; // Para el contador de favoritos
-import { useEffect, useState, forwardRef } from "react";
+import { Badge } from "@/components/ui/badge";
+import { useEffect, useState, forwardRef, useRef } from "react"; // Added useRef
 import { motion } from "framer-motion";
 import ProductSearchDialog from "@/components/ProductSearchDialog";
-import { useInterfaceStore } from "@/lib/store/useInterfaceStore"; // Importar store de interfaz
-import { useFavoritesStore } from "@/lib/store/useFavoritesStore"; // Importar store de favoritos
+import { useInterfaceStore } from "@/lib/store/useInterfaceStore";
+import { useFavoritesStore } from "@/lib/store/useFavoritesStore";
 
 const Navbar = forwardRef<HTMLDivElement>((props, ref) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
+  const [navbarVisible, setNavbarVisible] = useState(true);
+  const lastScrollY = useRef(0); // Using useRef to store lastScrollY to avoid re-renders from its change
 
-  const { openFavoritesSheet } = useInterfaceStore((state) => state.actions); // Acción para abrir el sheet
+  const { openFavoritesSheet } = useInterfaceStore((state) => state.actions);
   const favoriteCount = useFavoritesStore(
     (state) => state.favoriteProducts.length
-  ); // Cantidad de favoritos
+  );
+
+  // Threshold after which the navbar starts hiding/showing
+  const SCROLL_THRESHOLD = 50; // px, adjust as needed
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 0);
-    window.addEventListener("scroll", handleScroll);
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      setIsScrolled(currentScrollY > 0); // For shadow
+
+      if (
+        currentScrollY > lastScrollY.current &&
+        currentScrollY > SCROLL_THRESHOLD
+      ) {
+        // Scrolling Down and past threshold
+        setNavbarVisible(false);
+      } else if (currentScrollY < lastScrollY.current) {
+        // Scrolling Up
+        setNavbarVisible(true);
+      }
+      // Update lastScrollY, ensuring it's not negative on overscroll (iOS)
+      lastScrollY.current = Math.max(0, currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, []); // Empty dependency array, lastScrollY is a ref
 
   return (
     <>
       <header
         ref={ref}
-        className={`w-full fixed top-0 z-30 transition-all bg-[#FFF8E7] backdrop-blur ${
-          // z-index ajustado a 30
-          isScrolled ? "shadow-md" : ""
-        }`}
+        className={`w-full fixed top-0 z-30 bg-[#FFF8E7] backdrop-blur transition-all duration-300 ease-in-out ${
+          isScrolled && navbarVisible ? "shadow-md" : "" // Show shadow only if visible and scrolled
+        } ${navbarVisible ? "translate-y-0" : "-translate-y-full"}`} // Dynamic visibility
       >
-        <nav className="container mx-auto flex items-center justify-between py-4 px-6">
+        {/* Reduced py-4 to py-3 for a slightly smaller navbar height */}
+        <nav className="container mx-auto flex items-center justify-between py-3 px-6">
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -56,9 +78,10 @@ const Navbar = forwardRef<HTMLDivElement>((props, ref) => {
               <Image
                 src="/America.png"
                 alt="Logo America"
-                width={160}
-                height={60}
-                className="w-28 sm:w-32 md:w-36 lg:w-40 xl:w-44 h-auto"
+                width={150} // Adjusted base width for aspect ratio
+                height={56} // Adjusted base height for aspect ratio
+                // Adjusted logo widths for a slightly smaller logo
+                className="w-24 sm:w-28 md:w-32 lg:w-36 xl:w-40 h-auto"
                 priority
               />
             </Link>
@@ -68,32 +91,35 @@ const Navbar = forwardRef<HTMLDivElement>((props, ref) => {
             <NavbarMenu />
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 sm:gap-4">
+            {" "}
+            {/* Slightly reduced gap for smaller screens */}
             <Search
-              className="w-8 h-8 stroke-[1] cursor-pointer transition-transform duration-300 hover:scale-110 hover:stroke-red-500"
+              className="w-7 h-7 sm:w-8 sm:h-8 stroke-[1] cursor-pointer transition-transform duration-300 hover:scale-110 hover:stroke-red-500" // Slightly smaller icon
               onClick={() => setIsSearchDialogOpen(true)}
             />
             <button
-              onClick={openFavoritesSheet} // Abre el sheet de favoritos
+              onClick={openFavoritesSheet}
               className="relative transition-transform duration-300 hover:scale-110 group"
               aria-label="Ver favoritos"
             >
-              <Heart className="w-8 h-8 stroke-[1] cursor-pointer group-hover:stroke-red-500" />
+              <Heart className="w-7 h-7 sm:w-8 sm:h-8 stroke-[1] cursor-pointer group-hover:stroke-red-500" />{" "}
+              {/* Slightly smaller icon */}
               {favoriteCount > 0 && (
                 <Badge
                   variant="destructive"
-                  className="absolute -top-1 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs rounded-full"
+                  className="absolute -top-1.5 -right-1.5 h-4 w-4 sm:h-5 sm:w-5 p-0 flex items-center justify-center text-[10px] sm:text-xs rounded-full" // Adjusted badge size/pos
                 >
                   {favoriteCount}
                 </Badge>
               )}
             </button>
-
             <div className="lg:hidden">
               <Sheet>
                 <SheetTrigger asChild>
                   <button aria-label="Abrir menú móvil">
-                    <MenuIcon className="w-8 h-8 cursor-pointer" />
+                    <MenuIcon className="w-7 h-7 sm:w-8 sm:h-8 cursor-pointer" />{" "}
+                    {/* Slightly smaller icon */}
                   </button>
                 </SheetTrigger>
                 <SheetContent
@@ -115,7 +141,6 @@ const Navbar = forwardRef<HTMLDivElement>((props, ref) => {
         open={isSearchDialogOpen}
         onOpenChange={setIsSearchDialogOpen}
       />
-      {/* FavoritesSheet se renderiza desde RootLayout */}
     </>
   );
 });
