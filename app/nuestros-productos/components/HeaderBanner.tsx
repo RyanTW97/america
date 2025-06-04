@@ -9,7 +9,7 @@ const HeaderBanner: React.FC<HeaderBannerProps> = ({
   imageSrc = "/nuestrosProductos.png",
 }) => {
   return (
-    <div className="relative w-full h-[300px] md:h-[350px] lg:h-[400px]">
+    <div className="relative w-full h-[150px] md:h-[200px] lg:h-[300px]">
       <Image
         src={imageSrc}
         alt="Banner"

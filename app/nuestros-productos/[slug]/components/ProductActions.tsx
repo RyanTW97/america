@@ -1,4 +1,5 @@
 // app/nuestros-productos/[slug]/components/ProductActions.tsx
+// @ts-nocheck
 "use client";
 
 import { Button } from "@/components/ui/button";
@@ -20,51 +21,72 @@ const ProductActions = ({
   selectedColorName,
   fichaTecnicaUrl,
 }: ProductActionsProps) => {
-  const handleCotizarClick = () => {
-    const producto = encodeURIComponent(productTitle);
-    const presentacionText = selectedPresentation
-      ? encodeURIComponent(selectedPresentation)
-      : "No especificada";
-    const colorText = selectedColorName
-      ? encodeURIComponent(selectedColorName)
-      : "No especificado";
+  // Determinar si el botón de cotizar debe estar habilitado
+  const canCotizar = !!selectedColorName && !!selectedPresentation;
 
-    let mensaje = `¡Hola! Quisiera cotizar el producto: ${producto}.`;
+  // Lógica para la nota que se muestra en la página
+  let cotizarNota = "Por favor, seleccione color y presentación para cotizar.";
+  if (canCotizar) {
+    cotizarNota = `Ha seleccionado la presentación: ${selectedPresentation} y el color: ${selectedColorName}. ¡Listo para cotizar!`;
+  } else if (selectedPresentation && !selectedColorName) {
+    cotizarNota = `Ha seleccionado la presentación: ${selectedPresentation}. Por favor, seleccione un color.`;
+  } else if (!selectedPresentation && selectedColorName) {
+    cotizarNota = `Ha seleccionado el color: ${selectedColorName}. Por favor, seleccione una presentación.`;
+  }
+
+  // Construcción del mensaje específico para WhatsApp
+  const buildWhatsappMessage = () => {
+    let message = `¡Hola! Estoy interesado/a en solicitar una cotización para el producto: ${productTitle}.`;
     if (selectedPresentation) {
-      mensaje += ` Presentación: ${presentacionText}.`;
+      message += `\nPresentación: ${selectedPresentation}.`;
     }
     if (selectedColorName) {
-      mensaje += ` Color: ${colorText}.`;
+      message += `\nColor: ${selectedColorName}.`;
     }
+    message += "\n\nAgradecería su ayuda con esto. ¡Gracias!";
+    return encodeURIComponent(message.trim());
+  };
 
-    // REEMPLAZA 'TUNUMERODEWHATSAPP' con tu número de WhatsApp real (ej: 593991234567)
-    const whatsappUrl = `https://wa.me/TUNUMERODEWHATSAPP?text=${encodeURIComponent(
-      mensaje.trim()
-    )}`;
+  const handleCotizarClick = () => {
+    if (!canCotizar) return; // No hacer nada si no se puede cotizar
 
-    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+    const mensajeWhatsapp = buildWhatsappMessage();
+    const whatsappUrl = `https://wa.me/593987658326?text=${mensajeWhatsapp}`;
+
+    if (typeof window !== "undefined") {
+      window.open(whatsappUrl, "_blank", "noopener,noreferrer");
+    }
   };
 
   return (
-    <div className="space-y-6 rounded-lg  p-4  sm:p-6">
+    <div className="space-y-6 rounded-lg p-4 sm:p-6">
       {/* Acción: Cotizar por WhatsApp */}
       <div>
         <div className="flex items-center gap-3 sm:gap-4">
-          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-green-500 text-white sm:h-14 sm:w-14">
+          <span
+            className={cn(
+              "flex h-12 w-12 shrink-0 items-center justify-center rounded-full text-white sm:h-14 sm:w-14",
+              canCotizar ? "bg-green-500" : "bg-zinc-400" // Cambia el color del ícono si está deshabilitado
+            )}
+          >
             <IoLogoWhatsapp size={28} className="sm:h-7 sm:w-7" />
           </span>
           <Button
             onClick={handleCotizarClick}
-            className="flex-grow rounded-md bg-green-500 px-4 py-5 text-sm font-semibold uppercase text-white shadow-md hover:bg-green-600 sm:text-base"
-            // Ajusta el padding (py-5) y tamaño de texto para que se vea como el Figma
+            disabled={!canCotizar}
+            className={cn(
+              "flex-grow rounded-md px-4 py-5 text-sm font-semibold uppercase text-white shadow-md sm:text-base",
+              canCotizar
+                ? "bg-green-500 hover:bg-green-600"
+                : "bg-zinc-300 cursor-not-allowed opacity-70"
+            )}
+            aria-disabled={!canCotizar}
           >
             COTIZAR
           </Button>
         </div>
         <p className="mt-2 text-left text-xs text-zinc-500 sm:ml-16 md:ml-[calc(3.5rem+1rem)]">
-          {" "}
-          {/* Alinear con el botón */}
-          Nota: Seleccione las opciones que desea cotizar.
+          {cotizarNota}
         </p>
       </div>
 
@@ -76,23 +98,16 @@ const ProductActions = ({
           rel="noopener noreferrer"
           className={cn(
             "group flex w-full items-center gap-3 sm:gap-4 rounded-lg text-left"
-            // Quitado el fondo y borde del Link, se aplicarán al Button interno si es necesario,
-            // o se puede estilizar el Link como un bloque clickeable que contiene el ícono y el botón.
-            // Por ahora, el Button interno llevará el estilo principal.
           )}
         >
           <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-800 text-white sm:h-14 sm:w-14">
             <GrDocumentPdf size={24} className="sm:h-6 sm:w-6" />
           </span>
           <Button
-            asChild // Para que el Link controle la navegación
+            asChild
             className="flex-grow rounded-md bg-blue-800 px-4 py-5 text-sm font-semibold uppercase text-white shadow-md hover:bg-blue-900 sm:text-base"
           >
-            <span>
-              {" "}
-              {/* Span necesario si Button es asChild de Link y quieres contenido dentro */}
-              DESCARGAR FICHA
-            </span>
+            <span>DESCARGAR FICHA</span>
           </Button>
         </Link>
       ) : (

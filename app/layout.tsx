@@ -33,6 +33,18 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Pinturas America",
   description: "La mejor calidad en pinturas.",
+  // Directiva para que los robots en general no traduzcan la página
+  robots: {
+    notranslate: true,
+  },
+  // Directiva específica para Google (incluyendo Google Translate usado en Chrome)
+  // para que no traduzca la página.
+  // Next.js generará: <meta name="google" content="notranslate" />
+  other: {
+    google: "notranslate",
+    // Alternativamente, podrías usar 'googlebot': 'notranslate'
+    // Ambas son reconocidas, pero 'google' es a menudo más general para los servicios de Google.
+  },
 };
 
 export default function RootLayout({
@@ -40,6 +52,12 @@ export default function RootLayout({
 }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es">
+      {/* También podrías añadir la metaetiqueta directamente aquí si prefieres,
+        aunque manejarlo a través del objeto metadata es más centralizado:
+        <head>
+          <meta name="google" content="notranslate" />
+        </head>
+      */}
       <body
         className={`
           ${archivo.variable}

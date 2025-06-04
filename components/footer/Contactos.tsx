@@ -5,8 +5,8 @@ const Contactos = () => {
   const contactInfo = {
     address: "Turubamba E3E S61-19 y pasaje S61C",
     addressLink: "https://maps.app.goo.gl/BmXYMT7voFGherE4A", // Enlace para el mapa
-    phone: "(02) 9999-999",
-    phoneLink: "tel:029999999", // Formato para el enlace tel:
+    phone: "(02) 4758-123",
+    phoneLink: "tel:024758123", // Formato para el enlace tel:
     email: "ventas@pinturasamerica.com",
     emailLink: "mailto:ventas@pinturasamerica.com",
   };

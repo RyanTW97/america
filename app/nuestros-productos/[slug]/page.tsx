@@ -1,40 +1,46 @@
 // app/nuestros-productos/[slug]/page.tsx
 // @ts-nocheck
-
 import Link from "next/link";
-import ProductDetailHeader from "./components/ProductDetailHeader"; // Verifica la ruta
-import ProductDetails from "./components/ProductDetails"; // Verifica la ruta
-import RelatedProductsByLine from "./components/RelatedProductsByLine"; // Verifica la ruta
-import ProductCarousel from "@/components/ProductCarousel"; // Verifica la ruta
+import ProductDetailHeader from "./components/ProductDetailHeader";
+import ProductDetails from "./components/ProductDetails";
+import RelatedProductsByLine from "./components/RelatedProductsByLine";
+import ProductCarousel from "@/components/ProductCarousel";
 
 import {
   ProductPageData,
   StrapiSingleProductResponse,
   Product,
   StrapiProductsResponse,
-} from "@/app/types/productPage"; // Verifica la ruta
+} from "@/app/types/productPage";
 
-const API_URL = "https://servidor-tricolor-64a23aa2b643.herokuapp.com/api";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  "https://servidor-tricolor-64a23aa2b643.herokuapp.com/api";
 const PRODUCTS_ENDPOINT = `${API_URL}/productos-americas`;
 
-async function getProductBySlug(slug: string): Promise<ProductPageData | null> {
-  // **Corregimos el nombre de ficha técnica a “ficha_Tecnica” (tal cual aparece en la API)
-  const populateQuery = [
-    "populate[lineas_america][populate][Imagen]=*",
-    "populate[lineas_america][populate][productos_americas][populate][imagen]=*",
-    "populate[imagen]=*",
-    // Aquí corregimos el populate exacto para fichas técnicas:
-    "populate[ficha_Tecnica]=*",
-    // Si quisieras asegurar que Strapi incluya las ventajas (aunque en tu JSON ya vienen):
-    "populate[ventajas]=*",
-    "populate[hoja_seguridad]=*",
-    "populate[usos_recomendados][populate][icono]=*",
-    "populate[beneficios][populate][icono]=*",
-    "populate[colores][populate][imagen_color]=*",
-    "populate[videos_aplicacion][populate][thumbnail_video]=*",
-  ].join("&");
+/** Query de populates extraídos a constante para no recrearlos en cada llamada */
+const POPULATE_QUERIES = [
+  "populate[lineas_america][populate][Imagen]=*",
+  "populate[lineas_america][populate][productos_americas][populate][imagen]=*",
+  "populate[imagen]=*",
+  "populate[ficha_Tecnica]=*",
+  "populate[ventajas]=*",
+  "populate[hoja_seguridad]=*",
+  "populate[usos_recomendados][populate][icono]=*",
+  "populate[beneficios][populate][icono]=*",
+  "populate[colores][populate][imagen_color]=*",
+  "populate[videos_aplicacion][populate][thumbnail_video]=*",
+  "populate[presentacion]=*",
+].join("&");
 
-  const url = `${PRODUCTS_ENDPOINT}?filters[slug][$eq]=${slug}&${populateQuery}`;
+/**
+ * Obtiene un producto completo desde Strapi según su slug.
+ * Retorna null si no se encuentra o falla el fetch.
+ */
+async function getProductBySlug(slug: string): Promise<ProductPageData | null> {
+  const url = `${PRODUCTS_ENDPOINT}?filters[slug][$eq]=${encodeURIComponent(
+    slug
+  )}&${POPULATE_QUERIES}`;
 
   try {
     const res = await fetch(url, { cache: "no-store" });
@@ -45,8 +51,9 @@ async function getProductBySlug(slug: string): Promise<ProductPageData | null> {
       return null;
     }
     const jsonResponse: StrapiSingleProductResponse = await res.json();
-    return jsonResponse.data && jsonResponse.data.length > 0
-      ? jsonResponse.data[0]
+    const dataArray = jsonResponse.data;
+    return Array.isArray(dataArray) && dataArray.length > 0
+      ? dataArray[0]
       : null;
   } catch (error) {
     console.error(`Failed to fetch product with slug "${slug}":`, error);
@@ -54,6 +61,10 @@ async function getProductBySlug(slug: string): Promise<ProductPageData | null> {
   }
 }
 
+/**
+ * Obtiene hasta 10 productos destacados (destacado = true).
+ * Retorna un arreglo vacío si falla el fetch.
+ */
 async function getFeaturedProducts(): Promise<Product[]> {
   const url = `${PRODUCTS_ENDPOINT}?filters[destacado][$eq]=true&populate[imagen]=*&pagination[limit]=10`;
 
@@ -66,16 +77,35 @@ async function getFeaturedProducts(): Promise<Product[]> {
       return [];
     }
     const jsonResponse: StrapiProductsResponse = await res.json();
-    return jsonResponse.data || [];
+    return Array.isArray(jsonResponse.data) ? jsonResponse.data : [];
   } catch (error) {
     console.error("Failed to fetch featured products:", error);
     return [];
   }
 }
 
-// Next.js 15 genera un tipo para PageProps en .next/types/app/…/page.d.ts
-// que espera: { params: Promise<{ slug: string }> }
-// Por eso definimos aquí el mismo shape:
+/**
+ * Extrae el texto de la primera etiqueta <paragraph>
+ * para usarlo en la meta descripción (hasta 155 caracteres).
+ */
+function extractMetaDescription(descBlocks: unknown): string | null {
+  if (
+    Array.isArray(descBlocks) &&
+    descBlocks.length > 0 &&
+    descBlocks[0]?.type === "paragraph" &&
+    Array.isArray(descBlocks[0].children)
+  ) {
+    const text = descBlocks[0].children
+      .filter((c: any) => c?.type === "text" && typeof c.text === "string")
+      .map((c: any) => c.text)
+      .join(" ")
+      .trim()
+      .substring(0, 155);
+    return text || null;
+  }
+  return null;
+}
+
 type PageProps = {
   params: Promise<{
     slug: string;
@@ -83,14 +113,15 @@ type PageProps = {
 };
 
 export default async function ProductDetailPage({ params }: PageProps) {
-  // Como params viene envuelto en Promise, hacemos await:
   const { slug } = await params;
 
+  // Ejecutamos ambas peticiones en paralelo
   const [productData, featuredProducts] = await Promise.all([
     getProductBySlug(slug),
     getFeaturedProducts(),
   ]);
 
+  // Si no existe el producto, renderizamos mensaje de error
   if (!productData) {
     return (
       <main className="flex min-h-screen flex-col items-center justify-center p-6 text-center sm:p-24">
@@ -111,22 +142,28 @@ export default async function ProductDetailPage({ params }: PageProps) {
     );
   }
 
-  const linea = productData.attributes.lineas_america?.data;
-  const lineaAttr = linea?.attributes;
+  // Extraemos atributos de la línea (lineas_america)
+  const lineaData = productData.attributes.lineas_america?.data;
+  const lineaAttr = lineaData?.attributes ?? null;
 
-  const related =
+  // Construimos el arreglo de productos relacionados (excluyendo el actual)
+  const relatedProducts =
     lineaAttr?.productos_americas?.data
-      ?.filter((p: any) => p?.id !== productData.id)
-      .map((p: any) => ({
-        id: p.id,
-        attributes: {
-          titulo: p.attributes.titulo,
-          slug: p.attributes.slug,
-          imagen: p.attributes.imagen,
-          descripcion: p.attributes.descripcion,
-        },
-      })) || [];
-  const limitedRelated = related.slice(0, 10);
+      ?.filter((p: any) => p.id !== productData.id)
+      .map((p: any) => {
+        const attrs = p.attributes;
+        return {
+          id: p.id,
+          attributes: {
+            titulo: attrs.titulo,
+            slug: attrs.slug,
+            imagen: attrs.imagen,
+            descripcion: attrs.descripcion,
+          },
+        };
+      }) || [];
+
+  const limitedRelated = relatedProducts.slice(0, 10);
 
   return (
     <main className="min-h-screen bg-zinc-50">
@@ -171,7 +208,6 @@ export default async function ProductDetailPage({ params }: PageProps) {
 }
 
 export async function generateMetadata({ params }: PageProps) {
-  // También aquí params es Promise<{ slug: string }>
   const { slug } = await params;
   const product = await getProductBySlug(slug);
 
@@ -182,32 +218,21 @@ export async function generateMetadata({ params }: PageProps) {
     };
   }
 
-  let descriptionMeta = `Detalles sobre ${product.attributes.titulo}. Encuentra calidad y rendimiento con los productos de América Pinturas.`;
-  const descBlocks = product.attributes.descripcion;
+  const { titulo, descripcion, imagen } = product.attributes;
+  let descriptionMeta = `Detalles sobre ${titulo}. Encuentra calidad y rendimiento con los productos de América Pinturas.`;
 
-  if (
-    Array.isArray(descBlocks) &&
-    descBlocks.length > 0 &&
-    descBlocks[0]?.type === "paragraph" &&
-    Array.isArray(descBlocks[0].children) &&
-    descBlocks[0].children.length > 0
-  ) {
-    const text = descBlocks[0].children
-      .filter((c: any) => c?.type === "text" && typeof c.text === "string")
-      .map((c: any) => c.text)
-      .join(" ")
-      .trim()
-      .substring(0, 155);
-    if (text) descriptionMeta = text;
+  const extracted = extractMetaDescription(descripcion);
+  if (extracted) {
+    descriptionMeta = extracted;
   }
 
-  const mainImage = product.attributes.imagen?.data?.attributes;
+  const mainImage = imagen?.data?.attributes;
 
   return {
-    title: `${product.attributes.titulo} | América Pinturas`,
+    title: `${titulo} | América Pinturas`,
     description: descriptionMeta,
     openGraph: {
-      title: `${product.attributes.titulo} | América Pinturas`,
+      title: `${titulo} | América Pinturas`,
       description: descriptionMeta,
       images: mainImage?.url
         ? [
@@ -215,7 +240,7 @@ export async function generateMetadata({ params }: PageProps) {
               url: mainImage.url,
               width: mainImage.width || 800,
               height: mainImage.height || 600,
-              alt: mainImage.alternativeText || product.attributes.titulo,
+              alt: mainImage.alternativeText || titulo,
             },
           ]
         : [],
@@ -223,7 +248,7 @@ export async function generateMetadata({ params }: PageProps) {
     },
     twitter: {
       card: "summary_large_image",
-      title: `${product.attributes.titulo} | América Pinturas`,
+      title: `${titulo} | América Pinturas`,
       description: descriptionMeta,
       images: mainImage?.url ? [mainImage.url] : [],
     },
