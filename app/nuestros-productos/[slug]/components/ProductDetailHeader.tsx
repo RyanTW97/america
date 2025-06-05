@@ -17,8 +17,11 @@ const ProductDetailHeader = ({
 }: ProductDetailHeaderProps) => {
   const altText = lineaImageAlt || `Banner de la línea ${lineaTitle}`;
 
+  // These are the intrinsic dimensions of your image.
+  // They are used by Next.js to calculate the aspect ratio
+  // and prevent layout shift, especially important for LCP elements.
   const intrinsicImageWidth = 1440;
-  const intrinsicImageHeight = 540;
+  const intrinsicImageHeight = 250;
 
   // Variantes para la animación de Framer Motion
   const textContainerVariants = {
@@ -49,14 +52,24 @@ const ProductDetailHeader = ({
     <header className="relative w-full">
       {lineaImageUrl ? (
         <div className="relative w-full">
+          {/*
+            Updated next/image component:
+            - Removed `layout="responsive"`.
+            - `width` and `height` props define the aspect ratio.
+            - `className="block h-auto w-full"` makes the image responsive.
+            - Added `sizes` prop for optimization. It tells the browser
+              how wide the image will be at different viewport sizes,
+              helping it select the most appropriate image source from the srcset
+              Next.js generates. "100vw" means the image will be 100% of the viewport width.
+          */}
           <Image
             src={lineaImageUrl}
             alt={altText}
             width={intrinsicImageWidth}
             height={intrinsicImageHeight}
-            layout="responsive"
-            className="block h-auto w-full"
-            priority
+            className="block h-auto w-full" // Makes the image responsive, respecting aspect ratio
+            priority // Good for LCP (Largest Contentful Paint) images
+            sizes="100vw" // Crucial for performance with responsive images
           />
           <div
             className="absolute inset-0 left-[5%] flex w-[45%] items-center 
@@ -72,7 +85,6 @@ const ProductDetailHeader = ({
                 variants={textItemVariants}
                 className="block text-lg font-medium text-white text-shadow-sm 
                            sm:text-xl md:text-2xl lg:text-3xl"
-                // Quitado text-center para que se alinee a la izquierda por defecto dentro de su contenedor
               >
                 Línea
               </motion.span>
@@ -80,7 +92,6 @@ const ProductDetailHeader = ({
                 variants={textItemVariants}
                 className="mt-0 sm:mt-1 text-3xl font-bold leading-tight text-white text-shadow-md 
                            sm:text-4xl md:text-5xl lg:text-6xl"
-                // Quitado text-center
               >
                 {lineaTitle}
               </motion.h1>
