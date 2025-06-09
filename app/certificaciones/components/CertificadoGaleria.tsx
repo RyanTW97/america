@@ -1,7 +1,8 @@
 "use client";
 
-import React from "react";
-import { motion } from "framer-motion";
+import React, { useEffect, memo } from "react";
+import { motion, useAnimation } from "framer-motion";
+import { useInView } from "react-intersection-observer";
 import {
   Dialog,
   DialogContent,
@@ -10,6 +11,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
+// --- TIPOS Y DATOS ---
 interface Certificate {
   name: string;
   imageSrc: string;
@@ -46,22 +48,42 @@ const certificateData: Certificate[] = [
   },
 ];
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.1 },
+// --- VARIANTES DE ANIMACIÓN CON LÓGICA DE CASCADA POR FILA ---
+const cardVariants = {
+  hidden: { y: 50, opacity: 0 },
+  visible: (i: number) => {
+    // Asumimos 5 columnas para el cálculo del delay en la animación
+    const columns = 5;
+    const row = Math.floor(i / columns);
+    const col = i % columns;
+    return {
+      y: 0,
+      opacity: 1,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        // El delay se calcula en base a la fila y la columna para el efecto cascada
+        delay: row * 0.25 + col * 0.08,
+      },
+    };
   },
 };
 
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 100 } },
-};
-
+// --- COMPONENTE PRINCIPAL ---
 const CertificadoGaleria: React.FC = () => {
   const [selectedCertificate, setSelectedCertificate] =
     React.useState<Certificate | null>(null);
+  const controls = useAnimation();
+  const [ref, inView] = useInView({
+    triggerOnce: true,
+    threshold: 0.1,
+  });
+
+  useEffect(() => {
+    if (inView) {
+      controls.start("visible");
+    }
+  }, [controls, inView]);
 
   const handleImageClick = (certificate: Certificate) => {
     setSelectedCertificate(certificate);
@@ -75,7 +97,8 @@ const CertificadoGaleria: React.FC = () => {
 
   return (
     <Dialog open={!!selectedCertificate} onOpenChange={handleOpenChange}>
-      <div
+      <section
+        ref={ref}
         className="w-full bg-cover bg-center bg-fixed"
         style={{ backgroundImage: "url('/fondo-madera.webp')" }}
       >
@@ -86,17 +109,16 @@ const CertificadoGaleria: React.FC = () => {
                 CERTIFICACIONES
               </h1>
             </header>
-            <motion.main
-              className="grid grid-cols-1 gap-y-20 gap-x-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
-              {certificateData.map((cert) => (
+            <main className="grid grid-cols-1 gap-y-20 gap-x-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+              {certificateData.map((cert, index) => (
                 <DialogTrigger asChild key={cert.name}>
                   <motion.div
-                    variants={itemVariants}
+                    custom={index}
+                    initial="hidden"
+                    animate={controls}
+                    variants={cardVariants}
                     className="group flex cursor-pointer flex-col items-center text-center"
+                    style={{ willChange: "transform, opacity" }}
                     onClick={() => handleImageClick(cert)}
                     role="button"
                     tabIndex={0}
@@ -113,7 +135,7 @@ const CertificadoGaleria: React.FC = () => {
                           className="h-full w-full object-contain object-center"
                         />
                       </div>
-                      <div className="relative z-10 aspect-[569/711] w-full overflow-hidden rounded-lg  p-2 transition-transform duration-300 ease-in-out group-hover:scale-105">
+                      <div className="relative z-10 aspect-[569/711] w-full overflow-hidden rounded-lg p-2 transition-transform duration-300 ease-in-out group-hover:scale-105">
                         <img
                           src={cert.imageSrc}
                           alt={`Certificado de ${cert.name}`}
@@ -132,12 +154,15 @@ const CertificadoGaleria: React.FC = () => {
                   </motion.div>
                 </DialogTrigger>
               ))}
-            </motion.main>
+            </main>
           </div>
         </div>
-      </div>
+      </section>
       {selectedCertificate && (
-        <DialogContent className="flex h-full max-h-[90vh] w-[90vw] max-w-7xl items-center justify-center border-none bg-transparent p-0 shadow-none [&>button]:hidden">
+        <DialogContent
+          onCloseAutoFocus={(e) => e.preventDefault()}
+          className="flex h-full max-h-[90vh] w-[90vw] max-w-7xl items-center justify-center border-none bg-transparent p-0 shadow-none [&>button]:hidden"
+        >
           <DialogHeader className="sr-only">
             <DialogTitle>{selectedCertificate.name}</DialogTitle>
           </DialogHeader>
