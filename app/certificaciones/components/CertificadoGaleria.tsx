@@ -1,15 +1,7 @@
-// Archivo: CertificadoGaleria.tsx
-//
-// VERSIÓN FINAL CON HOVER AJUSTADO
-// Cambios:
-// 1. El efecto de zoom al pasar el cursor ahora solo afecta al certificado,
-//    mientras que la luz superior permanece estática.
-
 "use client";
 
 import React from "react";
 import { motion } from "framer-motion";
-
 import {
   Dialog,
   DialogContent,
@@ -18,18 +10,15 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 
-// --- Definición de Tipos (TypeScript) ---
 interface Certificate {
   name: string;
   imageSrc: string;
   fit?: "cover" | "contain";
 }
 
-// --- Lista de Certificados ---
 const certificateData: Certificate[] = [
   { name: "Acrilmax Mate", imageSrc: "/AcrilmaxMate.webp" },
   { name: "Acrylatex Mate", imageSrc: "/AcrylatexMate.webp" },
-  { name: "Acrylatex Semimate", imageSrc: "/AcrylatexSemimate.webp" },
   { name: "Airlux Brillante", imageSrc: "/AirluxBrillante.webp" },
   { name: "Baroxinc Mate", imageSrc: "/BaroxincMate.webp" },
   {
@@ -49,9 +38,6 @@ const certificateData: Certificate[] = [
   { name: "Megalux Brillante", imageSrc: "/MegaluxBrillante.webp" },
   { name: "Oxifer Mate", imageSrc: "/OxiferMate.webp" },
   { name: "RSE", imageSrc: "/RSE.webp" },
-  { name: "ISO 9001", imageSrc: "/ISO9001.webp" },
-  { name: "ISO 14001", imageSrc: "/ISO14001.webp" },
-  { name: "ISO 45001", imageSrc: "/ISO45001.webp" },
   { name: "Empresa Segura", imageSrc: "/EmpresaSegura.webp", fit: "contain" },
   {
     name: "Certificado CEER",
@@ -60,30 +46,19 @@ const certificateData: Certificate[] = [
   },
 ];
 
-// --- Variantes de Animación para Framer Motion ---
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
+    transition: { staggerChildren: 0.1 },
   },
 };
 
 const itemVariants = {
   hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: {
-      type: "spring",
-      stiffness: 100,
-    },
-  },
+  visible: { y: 0, opacity: 1, transition: { type: "spring", stiffness: 100 } },
 };
 
-// --- Componente Principal de la Galería ---
 const CertificadoGaleria: React.FC = () => {
   const [selectedCertificate, setSelectedCertificate] =
     React.useState<Certificate | null>(null);
@@ -104,14 +79,13 @@ const CertificadoGaleria: React.FC = () => {
         className="w-full bg-cover bg-center bg-fixed"
         style={{ backgroundImage: "url('/fondo-madera.webp')" }}
       >
-        <div className="min-h-screen w-full bg-black/40 p-4 sm:p-8">
+        <div className="min-h-screen w-full bg-black/35 p-4 sm:p-8">
           <div className="mx-auto max-w-screen-2xl">
             <header className="mb-12 text-center">
               <h1 className="text-4xl font-bold p-10 text-blue-700 drop-shadow-lg md:text-5xl">
-                CERTIFICADOS
+                CERTIFICACIONES
               </h1>
             </header>
-
             <motion.main
               className="grid grid-cols-1 gap-y-20 gap-x-8 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
               variants={containerVariants}
@@ -132,7 +106,6 @@ const CertificadoGaleria: React.FC = () => {
                     }
                   >
                     <div className="relative w-full">
-                      {/* La luz ya no tiene ninguna animación de hover */}
                       <div className="absolute -top-[70px] z-20 h-40 w-full">
                         <img
                           src="/fondoluz.webp"
@@ -140,8 +113,6 @@ const CertificadoGaleria: React.FC = () => {
                           className="h-full w-full object-contain object-center"
                         />
                       </div>
-
-                      {/* El efecto de hover ahora solo se aplica a este contenedor */}
                       <div className="relative z-10 aspect-[569/711] w-full overflow-hidden rounded-lg  p-2 transition-transform duration-300 ease-in-out group-hover:scale-105">
                         <img
                           src={cert.imageSrc}
@@ -165,8 +136,6 @@ const CertificadoGaleria: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* Contenido del Modal Corregido */}
       {selectedCertificate && (
         <DialogContent className="flex h-full max-h-[90vh] w-[90vw] max-w-7xl items-center justify-center border-none bg-transparent p-0 shadow-none [&>button]:hidden">
           <DialogHeader className="sr-only">
